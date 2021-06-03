@@ -1,0 +1,39 @@
+[base]
+swarm_type       = 'aggregation'
+n_agents = 40
+object_location  = [500, 500]
+
+
+[screen]
+frames = inf
+height = 1000
+width  = 1000
+
+[aggregation]
+convex    = false
+obstacles = true
+outside   = false
+n_sites = 1
+
+[roaches]
+#velocity force
+max_force         = 60.0
+#view of neighbor agents
+radius_view       = 100
+#weights for velocity forces
+alignment_weight  = 30.0
+cohesion_weight   = 7.0
+separation_weight = 12.0
+
+[agent]
+height    = 8
+width     = 10
+dt        = 0.2
+mass      = 20
+max_speed = 4.0
+min_speed = 2.0
+
+[wandering]
+wander_angle = 5
+wander_dist = 10
+wander_radius = 100
