@@ -30,8 +30,9 @@ class Aggregations(Swarm):
         scale_obstacle = [800, 800]
 
         scale_site = [150, 150]
+        # scale_site1 = [100, 100]
+        # scale_site2 = [150, 150]
 
-        # filename_obstacle = "experiments/aggregation/images/greyc2.png"
         filename_obstacle = "experiments/flocking/images/redd.png"
 
         filename_site = "experiments/aggregation/images/greyc1.png"
@@ -45,6 +46,13 @@ class Aggregations(Swarm):
         self.objects.add_object(
             file=filename_site, pos=object_loc, scale=scale_site, obj_type="site"
         )
+        # # add the sites
+        # self.objects.add_object(
+        #     file=filename_site, pos=[object_loc[0] + 150, object_loc[1]], scale=scale_site1, obj_type="site"
+        # )
+        # self.objects.add_object(
+        #     file=filename_site, pos=[object_loc[0] - 150, object_loc[1]], scale=scale_site2, obj_type="site"
+        # )
 
         min_x, max_x = area(object_loc[0], scale_obstacle[0])
         min_y, max_y = area(object_loc[1], scale_obstacle[1])
