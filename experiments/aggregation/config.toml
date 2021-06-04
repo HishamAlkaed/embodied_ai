@@ -1,13 +1,13 @@
 [base]
 swarm_type       = 'aggregation'
 n_agents = 40
-object_location  = [500, 500]
+object_location  = [400, 400]
 
 
 [screen]
 frames = inf
-height = 1000
-width  = 1000
+height = 800
+width  = 800
 
 [aggregation]
 convex    = false
@@ -24,16 +24,19 @@ radius_view       = 100
 alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
+leaving_threshold = 0.2
+
 
 [agent]
 height    = 8
 width     = 10
 dt        = 0.2
-mass      = 20
+mass      = 20 #### TODO: check if we could use it
 max_speed = 4.0
 min_speed = 2.0
+internal_clock = 2
 
 [wandering]
-wander_angle = 5
-wander_dist = 10
-wander_radius = 100
+wander_angle = 100
+wander_dist = 100
+wander_radius = 10

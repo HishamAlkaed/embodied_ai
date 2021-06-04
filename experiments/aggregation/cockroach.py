@@ -31,6 +31,7 @@ class Cockroach(Agent):
             index=index
         )
         self.aggregation = aggregation
+        self.state = 'wandering'
 
     def update_actions(self) -> None:
         """
@@ -46,12 +47,82 @@ class Cockroach(Agent):
             if bool(collide):
                 self.avoid_obstacle()
 
-        # do some random movement aka wandering
-        wandering_force = self.wander(wander_angle=config['wandering']['wander_angle'],
-                    wander_dist=config['wandering']['wander_dist'], wander_radius=config['wandering']['wander_radius'])
+        # print(self.state)
+        self.change_state()
+        self.site_behaviour()
 
-        # adjust the direction of the boid
-        self.steering += truncate(
-            wandering_force, config["roaches"]["max_force"]
-        )
+    def change_state(self) -> None:
+        ''''
 
+        '''
+        if self.state == 'wandering':
+            for site in self.aggregation.objects.sites:
+                collide = pygame.sprite.collide_mask(self, site)
+                if bool(collide):
+                    # find all the neighbors of a roach based on its radius view
+                    neighbors = self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])
+                    p_join = len(neighbors) / config['base']['n_agents']
+                    rand_p = np.random.uniform(0, 1)
+                    if p_join > rand_p:
+                        self.state = 'joining'
+
+        elif self.state == 'joining':
+            # TODO: the timer is not working here, it is only dependant on the random noise generated
+            start_ticks = pygame.time.get_ticks()  # starter tick
+            seconds = (pygame.time.get_ticks() - start_ticks) / 1000  # calculate how many seconds
+            random_noise = np.random.normal(0, 1)
+            if seconds > config['agent']['internal_clock'] + random_noise:  # if more than 2 seconds close the game
+                self.state = 'still'
+                pass
+
+        elif self.state == 'still':
+            neighbors = self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])
+            p_leave = len(neighbors) / config['base']['n_agents']
+            # rand_p = np.random.uniform(0, 1)
+            if p_leave > config['roaches']['leaving_threshold']:
+                self.state = 'leave'
+
+        elif self.state == 'leave':
+            # TODO: change state to wandering, now they are leaving but not changing the state
+            start_ticks = pygame.time.get_ticks()  # starter tick
+            seconds = (pygame.time.get_ticks() - start_ticks) / 1000  # calculate how many seconds
+            # random_noise = np.random.normal(0, 1)
+            # print(seconds)
+            if seconds > 5:
+                self.state = 'wandering'
+                # print('yes')
+
+
+
+    def site_behaviour(self) -> None:
+        '''
+            Returns:
+        '''
+        if self.state == 'wandering':
+            # do some random movement aka wandering
+            wandering_force = self.wander(wander_angle=config['wandering']['wander_angle'],
+                                          wander_dist=config['wandering']['wander_dist'],
+                                          wander_radius=config['wandering']['wander_radius'])
+
+            # adjust the direction of the boid
+            self.steering += truncate(
+                wandering_force, config["roaches"]["max_force"]
+            )
+
+        elif self.state == 'joining':
+            pass
+
+        elif self.state == 'still':
+            for site in self.aggregation.objects.sites:
+                collide = pygame.sprite.collide_mask(self, site)
+                if not bool(collide):
+                    self.state = 'wandering'
+                    pass
+                else:
+                    self.v = [0, 0]
+
+        elif self.state == 'leave':
+            # TODO: make the v direction random
+            self.v = [20, 20]
+            # self.v = np.random.randint(20, 2)[:]
+            # self.v =

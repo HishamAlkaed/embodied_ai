@@ -31,7 +31,8 @@ class Aggregations(Swarm):
 
         scale_site = [150, 150]
 
-        filename_obstacle = "experiments/aggregation/images/greyc2.png"
+        # filename_obstacle = "experiments/aggregation/images/greyc2.png"
+        filename_obstacle = "experiments/flocking/images/redd.png"
 
         filename_site = "experiments/aggregation/images/greyc1.png"
 
@@ -62,5 +63,5 @@ class Aggregations(Swarm):
             ):
                 coordinates = generate_coordinates(self.screen)
 
-            self.add_agent(Cockroach(pos=np.array(coordinates), v=[20, 20], aggregation=self, index=index))
+            self.add_agent(Cockroach(pos=np.array(coordinates), v=None, aggregation=self, index=index))
 
