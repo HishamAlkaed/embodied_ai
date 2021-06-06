@@ -19,21 +19,21 @@ n_sites = 1
 #velocity force
 max_force         = 60.0
 #view of neighbor agents
-radius_view       = 100
+radius_view       = 30
 #weights for velocity forces
 alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
-leaving_threshold = 0.6
+leaving_threshold = 0.15
 
 
 [agent]
-height    = 8
-width     = 10
+height    = 20
+width     = 14
 dt        = 0.2
 mass      = 20 #### TODO: check if we could use it
-max_speed = 40.0
-min_speed = 20.0
+max_speed = 20.0
+min_speed = 10.0
 internal_clock = 1
 
 [wandering]
