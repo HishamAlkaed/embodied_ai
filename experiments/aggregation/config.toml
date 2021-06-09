@@ -1,11 +1,11 @@
 [base]
 swarm_type       = 'aggregation'
-n_agents = 40
+n_agents = 20
 object_location  = [400, 400]
 
 
 [screen]
-frames = inf
+frames = 100
 height = 800
 width  = 800
 
@@ -13,18 +13,19 @@ width  = 800
 convex    = false
 obstacles = true
 outside   = false
-n_sites = 2
 
 [roaches]
 #velocity force
 max_force         = 60.0
 #view of neighbor agents
-radius_view       = 10
+radius_view       = 15
 #weights for velocity forces
 alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
 leaving_threshold = 0.15
+join_leave_interval = 10
+n_agents_for_joining = 10
 
 
 [agent]
@@ -34,7 +35,8 @@ dt        = 0.2
 mass      = 20 #### TODO: check if we could use it
 max_speed = 20.0
 min_speed = 10.0
-internal_clock = 1
+internal_clock = 0.15 # 0.2 for big small
+
 
 [wandering]
 wander_angle = 100

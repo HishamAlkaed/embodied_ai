@@ -33,10 +33,15 @@ class Cockroach(Agent):
         )
         self.aggregation = aggregation
         self.state = 'wandering'
-        self.start_millis = 0
+        self.start_millis = 0 # Saves the time
         self.started = False
         self.neighbors = []
-        self.previous_time = 0
+        self.big_timer = 0
+        self.big_started = False
+
+        self.avoided_obstacles: bool = False
+        self.prev_pos = None
+        self.prev_v = None
 
     def update_actions(self) -> None:
         """
@@ -50,11 +55,27 @@ class Cockroach(Agent):
         for obstacle in self.aggregation.objects.obstacles:
             collide = pygame.sprite.collide_mask(self, obstacle)
             if bool(collide):
+                # If boid gets stuck because when avoiding the obstacle ended up inside of the object,
+                # resets the position to the previous one and do a 180 degree turn back
+                if not self.avoided_obstacles:
+                    self.prev_pos = self.pos.copy()
+                    self.prev_v = self.v.copy()
+
+                else:
+                    self.pos = self.prev_pos.copy()
+                    self.v = self.prev_v.copy()
+
+                self.avoided_obstacles = True
                 self.avoid_obstacle()
+                return
+
+        self.prev_v = None
+        self.prev_pos = None
+
+        self.avoided_obstacles = False
         self.site_behaviour()
         self.change_state()
         # print(self.state)
-
 
     def change_state(self) -> None:
         ''''
@@ -67,58 +88,57 @@ class Cockroach(Agent):
                 if bool(collide):  # if wandering and the roach is in some site
                     # find all the neighbors of a roach based on its radius view
                     neighbors = self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])
-                    p_join = len(neighbors) / config['base']['n_agents']
-                    rand_p = np.random.uniform(0, .03)  # the lower the radius view is the lower this should be
+                    x = 0
+                    for n in neighbors:
+                        if all(n.v) == 0:
+                            x += 1
+                    p_join = x / config['base']['n_agents'] # TODO: try using only the neighbors instead of all agents
+                    rand_p = np.random.uniform(0, config['roaches']['n_agents_for_joining']/config['base']['n_agents'] + 0.01)  # the lower the radius view is the lower this should be
                     if p_join < rand_p:  # the less neighbors the higher the prob to join
                         self.state = 'joining'
-                # else:
-                #     pass
+                else:
+                    pass
+
         elif self.state == 'joining':
             if not self.started:
                 self.start_millis = pygame.time.get_ticks()  # starter tick
                 self.started = True
-            random_noise = np.random.normal(0, 1) # this is added to let the roaches stop in multiple positions insde the site
+            random_noise = np.random.uniform(0, 1) # this is added to let the roaches stop in multiple positions inside the site
             seconds = (pygame.time.get_ticks() - self.start_millis) / 1000  # calculate how many seconds
-            if seconds > config['agent']['internal_clock'] + random_noise:
+            if not pygame.sprite.collide_mask(self, self.aggregation.objects.sites.sprites()[0]) and \
+                    not pygame.sprite.collide_mask(self, self.aggregation.objects.sites.sprites()[1]):
+                self.state = 'wandering'
+                self.started = False
+            elif self.started and seconds > config['agent']['internal_clock'] + random_noise:
                 self.state = 'still'
                 self.started = False
-            else:  # if after the timer the roach is not anymore inside the site, the roach goes back to wandering state
-                self.state = 'wandering'
 
         elif self.state == 'still':
-            if not self.started:
+            if not self.started: # timer for 5 seconds
                 self.start_millis = pygame.time.get_ticks()  # starter tick
                 self.started = True
 
-            elif self.started and (abs(pygame.time.get_ticks() - self.start_millis) / 1000) <= 5.025:
-                neighbors = self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])
-                for passer in neighbors:
-                    if any(passer.v) != 0:
-                        self.neighbors.append(passer)
+            elif self.started and \
+                    (abs(pygame.time.get_ticks() - self.start_millis) / 1000) <= config['roaches']['join_leave_interval'] + 0.025:
+                pass
 
-            elif self.started and (abs(pygame.time.get_ticks() - self.start_millis) / 1000) > 5.025:
+            elif self.started and \
+                    (abs(pygame.time.get_ticks() - self.start_millis) / 1000) > config['roaches']['join_leave_interval'] + 0.025:
+                # after the time step have passed calculate the probability to leave
+                neighbors = self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])
+                for n in neighbors:
+                    if all(n.v) == 0:
+                        self.neighbors.append(n)
                 p_leave = len(self.neighbors) / config['base']['n_agents']
                 rand = np.random.uniform(0, 0.1)
-                if p_leave >= rand:
+                # the less passers move around the still roach, the higher the chance is the still roach is gonna leave
+                # print(p_leave, rand)
+                if p_leave <= rand:
                     self.state = 'leave'
-                # print(p_leave)
                 self.neighbors = []
                 self.start_millis = pygame.time.get_ticks()
                 self.started = False
-            # elif self.started and (abs(pygame.time.get_ticks() - self.start_millis) / 1000) > 5.025:
-            #     p_leave = len(self.neighbors) / config['base']['n_agents']
-            #     rand = np.random.uniform(0, 0.1)
-            #     if len(self.aggregation.find_neighbors(self, config["roaches"]["radius_view"])) != 0 and p_leave >= rand:
-            #         if np.random.randint(0,5) == 2:
-            #     # if p_leave >= rand:
-            #             self.state = 'leave'
-            #     elif p_leave >= rand:
-            #         self.state = 'leave'
-            #     print(p_leave)
-            #     self.neighbors = []
-            #     self.start_millis = pygame.time.get_ticks()
-            #     self.started = False
-            
+
         elif self.state == 'leave':
             if not self.started:
                 self.start_millis = pygame.time.get_ticks()  # starter tick

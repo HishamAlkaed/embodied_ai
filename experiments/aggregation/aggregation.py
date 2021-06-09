@@ -29,9 +29,13 @@ class Aggregations(Swarm):
 
         scale_obstacle = [800, 800]
 
-        # scale_site = [150, 150]
-        scale_site1 = [100, 100] # the small site
-        scale_site2 = [150, 150] # the big site
+        ''' same size setting'''
+        scale_site1 = [100, 100]
+        scale_site2 = [100, 100]
+
+        # ''' big small setting'''
+        # scale_site1 = [100, 100]
+        # scale_site2 = [150, 150]
 
         filename_obstacle = "experiments/flocking/images/redd.png"
 
@@ -42,10 +46,6 @@ class Aggregations(Swarm):
             file=filename_obstacle, pos=object_loc, scale=scale_obstacle, obj_type="obstacle"
         )
 
-        # # add the sites
-        # self.objects.add_object(
-        #     file=filename_site, pos=object_loc, scale=scale_site, obj_type="site"
-        # )
         # add the sites
         self.objects.add_object(
             file=filename_site, pos=[object_loc[0] + 150, object_loc[1]], scale=scale_site1, obj_type="site"

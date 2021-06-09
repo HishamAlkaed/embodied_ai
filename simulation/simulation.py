@@ -3,12 +3,66 @@ import time
 
 import matplotlib.pyplot as plt
 import pygame
-
+import pandas as pd
+import csv
 from typing import Union, Tuple
 
 from experiments.aggregation.aggregation import Aggregations
 from experiments.covid.population import Population
 from experiments.flocking.flock import Flock
+
+counter_inside_right = 0 # counts the number of roaches in the right site
+counter_inside_left = 0 # counts the number of roaches in the left site
+
+
+def append_to_data(data_tuple): # tuple left than right
+    right_data = open('experiments/aggregation/data_right.csv', 'r+') # open file for reading
+    left_data = open('experiments/aggregation/data_left.csv', 'r+')
+    right_lines = right_data.readlines() # read lines
+    left_lines = left_data.readlines()
+
+    if not right_lines[-1][-1].isnumeric():
+        right_lines[-1] += str(data_tuple[1])  # change the copy
+        left_lines[-1] += str(data_tuple[0])
+    else:
+        right_lines[-1] += ',' + str(data_tuple[1])  # change the copy
+        left_lines[-1] += ',' + str(data_tuple[0])
+
+    with open('experiments/aggregation/data_right.csv', 'w+', newline='') as result_file:
+        # wr = csv.writer(result_file, dialect='excel')
+        # print(right_list)
+        result_file.writelines(right_lines) # update last line with the made copy
+    with open('experiments/aggregation/data_left.csv', 'w+', newline='') as result_file:
+        # wr = csv.writer(result_file, dialect='excel')
+        result_file.writelines(left_lines)
+
+
+def start_recording():
+    with open('experiments/aggregation/data_right.csv', 'a', newline='\n') as result_file:
+        wr = csv.writer(result_file, dialect='excel')
+        wr.writerow([' '])
+    with open('experiments/aggregation/data_left.csv', 'a', newline='\n') as result_file:
+        wr = csv.writer(result_file, dialect='excel')
+        wr.writerow([' '])
+
+
+def save_history(object, start_time):
+    global counter_inside_left
+    global counter_inside_right
+    if int(str(time.time() - start_time).split('.')[0]) % 5 == 0 and int(str(time.time() - start_time).split('.')[1][0]) == 0:
+        for agent in object.swarm.agents:
+            collide1 = pygame.sprite.collide_mask(agent, object.swarm.objects.sites.sprites()[0])
+            collide2 = pygame.sprite.collide_mask(agent, object.swarm.objects.sites.sprites()[1])
+            if collide1 and all(agent.v) == 0:
+                counter_inside_right += 1
+            elif collide2 and all(agent.v) == 0:
+                counter_inside_left += 1
+        # list_right.append(counter_inside_right)
+        # list_left.append(counter_inside_left)
+        append_to_data(tuple((counter_inside_left, counter_inside_right)))
+
+        counter_inside_left = 0
+        counter_inside_right = 0
 
 
 def _plot_covid(data) -> None:
@@ -43,7 +97,14 @@ def _plot_flock() -> None:
 
 def _plot_aggregation() -> None:
     """Plot the data related to the aggregation experiment. TODO"""
-    pass
+
+    df_right = pd.read_csv('experiments/aggregation/data_right.csv')
+    df_left = pd.read_csv('experiments/aggregation/data_left.csv')
+
+    plt.plot(df_right.mean(), color=(1, 0, 0))  # red
+    plt.plot(df_left.mean(), color=(0, 1, 0))  # green
+    plt.xlabel("Timestep 5 seconds")
+    plt.show()
 
 
 """
@@ -105,7 +166,7 @@ class Simulation:
         elif self.swarm_type == "Flock":
             _plot_flock()
 
-        elif self.swarm_type == "Aggregation":
+        elif self.swarm_type == "aggregation":
             _plot_aggregation()
 
     def initialize(self) -> None:
@@ -127,6 +188,7 @@ class Simulation:
         pygame.display.flip()
 
     def run(self) -> None:
+
         """
         Main cycle where the initialization and the frame-by-frame computation is performed.
         The iteration con be infinite if the parameter iter was set to -1, or with a finite number of frames
@@ -139,14 +201,18 @@ class Simulation:
         # finite time parameter or infinite
 
         if self.iter == float("inf"):
-
+            start_recording()
+            start_time = time.time()
             while self.running:
-                init = time.time()
+                # init = time.time()
                 self.simulate()
-                # print(time.time() - init)
-
+                save_history(self, start_time)
             self.plot_simulation()
         else:
+            start_recording()
+            start_time = time.time()
             for i in range(self.iter):
                 self.simulate()
+                save_history(self, start_time)
             self.plot_simulation()
+
