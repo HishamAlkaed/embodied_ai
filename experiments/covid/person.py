@@ -11,7 +11,7 @@ class Person(Agent):
     The cockroach main class
     """
     def __init__(
-            self, state, pos, v, population, index: int, image: str = 'experiments/covid/images/green.png'
+            self, state, pos, v, population, age, index: int, image: str = 'experiments/covid/images/green.png'
     ) -> None:
         """
         Args:
@@ -42,6 +42,7 @@ class Person(Agent):
         self.prev_v = None
         self.start_millis = 0  # Saves the time
         self.started = False
+        self.age = age
 
     def update_actions(self) -> None:
         """
@@ -80,6 +81,7 @@ class Person(Agent):
         green = 'experiments/covid/images/green_1.png'
         orange = 'experiments/covid/images/orange.png'
         red = 'experiments/covid/images/red.png'
+        skull = 'experiments/covid/images/skull.png'
 
         if self.state == 'S':
             self.image, self.rect = image_with_rect(
@@ -93,6 +95,11 @@ class Person(Agent):
             self.image, self.rect = image_with_rect(
                 red, [config['agent']['width'], config['agent']['height']]
             )
+        elif self.state == 'D':
+            self.image, self.rect = image_with_rect(
+                skull, [15, config['agent']['height']]
+            )
+            self.v = [0, 0]
 
     def change_state(self) -> None:
         if self.state == 'S':
@@ -100,16 +107,73 @@ class Person(Agent):
             for n in neighbors:
                 if n.state == 'I':
                     self.state = 'I'
+                    if self.should_die():
+                        self.state = 'D'
                     break
-            # random_n = np.random.randint(0, 10000)
-            # if random_n == 7648:
-            #     self.state = 'I'
 
         if self.state == 'I':
             if not self.started:
                 self.start_millis = pygame.time.get_ticks()  # starter tick
                 self.started = True
             seconds = (pygame.time.get_ticks() - self.start_millis) / 1000  # calculate how many seconds
-            random_noise = np.random.normal(0, 3)
-            if self.started and seconds > 15 + random_noise:
-                self.state = 'R'
+            if self.started:
+                self.recovered_or_not(seconds)
+
+        elif self.state == 'D':
+            print(self.age)
+
+    def should_die(self) -> False:
+        if 0 <= self.age <= 19:
+            dying_prob = np.random.randint(0, config['person']['reference_group_dr'])
+            if dying_prob == 1:  # 0.06% chance
+                return True
+        elif 20 <= self.age <= 29:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 10))
+            if dying_prob == 1:  # 0.6% chance
+                return True
+        elif 30 <= self.age <= 39:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 45))
+            if dying_prob == 1:
+                return True
+        elif 40 <= self.age <= 49:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 130))
+            if dying_prob == 1:
+                return True
+        elif 50 <= self.age <= 59:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 440))
+            if dying_prob == 1:
+                return True
+        elif self.age > 60:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 1300))
+            if dying_prob == 1:
+                return True
+
+    def recovered_or_not(self, seconds) -> None:
+        if 0 <= self.age <= 19:
+            random_noise = np.random.uniform(-5.89, 5.89)
+            if seconds > 13.61 + random_noise:
+                self.recover()
+        elif 20 <= self.age <= 29:
+            random_noise = np.random.uniform(-5.81, 5.81)
+            if seconds > 13.97 + random_noise:
+                self.recover()
+        elif 30 <= self.age <= 39:
+            random_noise = np.random.uniform(-6, 6)
+            if seconds > 14.46 + random_noise:
+                self.recover()
+        elif 40 <= self.age <= 49:
+            random_noise = np.random.uniform(-5.72, 5.72)
+            if seconds > 14.79 + random_noise:
+                self.recover()
+        elif 50 <= self.age <= 59:
+            random_noise = np.random.uniform(-5.9, 5.9)
+            if seconds > 14.81 + random_noise:
+                self.recover()
+        elif self.age > 60:
+            random_noise = np.random.uniform(-5.896, 5.896)
+            if seconds > 14.73 + random_noise:
+                self.recover()
+
+    def recover(self) -> None:
+        self.state = 'R'
+        self.started = False

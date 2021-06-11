@@ -20,6 +20,7 @@ radius_view       = 30
 alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
+reference_group_dr = 1666 ### 0.06% = 6/10000 = 1666
 
 [agent]
 height    = 20
