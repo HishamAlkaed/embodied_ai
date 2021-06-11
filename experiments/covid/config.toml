@@ -1,2 +1,36 @@
 [base]
 swarm_type       = 'covid'
+n_agents = 40
+object_location  = [400, 400]
+
+[screen]
+frames = inf
+height = 800
+width  = 800
+
+[population]
+obstacles = false
+
+[person]
+#velocity force
+max_force         = 60.0
+#view of neighbor agents
+radius_view       = 30
+#weights for velocity forces
+alignment_weight  = 30.0
+cohesion_weight   = 7.0
+separation_weight = 12.0
+
+[agent]
+height    = 20
+width     = 10
+mass      = 20
+max_speed = 40.0
+min_speed = 30.0
+dt        = 0.2
+
+
+[wandering]
+wander_angle = 1
+wander_dist = 100
+wander_radius = 10

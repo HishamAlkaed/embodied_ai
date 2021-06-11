@@ -3,7 +3,6 @@ swarm_type       = 'aggregation'
 n_agents = 20
 object_location  = [400, 400]
 
-
 [screen]
 frames = 100
 height = 800
@@ -35,7 +34,7 @@ dt        = 0.2
 mass      = 20 #### TODO: check if we could use it
 max_speed = 20.0
 min_speed = 10.0
-internal_clock = 0.15 # 0.2 for big small
+internal_clock = 0.2 # 0.2 for big small
 
 
 [wandering]

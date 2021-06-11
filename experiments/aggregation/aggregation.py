@@ -29,13 +29,13 @@ class Aggregations(Swarm):
 
         scale_obstacle = [800, 800]
 
-        ''' same size setting'''
-        scale_site1 = [100, 100]
-        scale_site2 = [100, 100]
-
-        # ''' big small setting'''
+        # ''' same size setting'''
         # scale_site1 = [100, 100]
-        # scale_site2 = [150, 150]
+        # scale_site2 = [100, 100]
+
+        ''' big small setting'''
+        scale_site1 = [100, 100]
+        scale_site2 = [150, 150]
 
         filename_obstacle = "experiments/flocking/images/redd.png"
 
