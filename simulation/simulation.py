@@ -89,6 +89,8 @@ def _plot_covid(data) -> None:
     plt.ylabel("Population")
     plt.legend()
     fig.savefig(output_name)
+    # print(data)
+    # save_run(data)
     plt.show()
 
 
@@ -110,6 +112,14 @@ def _plot_aggregation() -> None:
     plt.xticks([])
     plt.title('Different size sites')
     plt.show()
+
+
+# def save_run(data):
+#     df = pd.read_csv('experiments/covid/data.csv')
+#     df['S'] = data['S']
+#     df['S'] = data['S']
+#     df['S'] = data['S']
+#     df['S'] = data['S']
 
 
 """

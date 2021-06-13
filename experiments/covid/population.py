@@ -38,7 +38,7 @@ class Population(Swarm):
                         pass
             random_age = random.randint(1, 95)
             if index == num_agents-1:
-                self.add_agent(
+                self.add_agent(  # patient zero
                     Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', age=random_age))
             self.add_agent(Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', age=random_age))
 
