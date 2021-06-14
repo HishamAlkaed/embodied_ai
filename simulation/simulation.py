@@ -77,14 +77,14 @@ def _plot_covid(data) -> None:
 
     """
     output_name = "experiments/covid/plots/Covid-19-SIR%s.png" % time.strftime(
-        "-%m.%d.%y-%H:%M", time.localtime()
+        "-%m.%d.%y_%H.%M", time.localtime()
     )
     fig = plt.figure()
     plt.plot(data["S"], label="Susceptible", color=(1, 0.5, 0))  # Orange
     plt.plot(data["I"], label="Infected", color=(1, 0, 0))  # Red
     plt.plot(data["R"], label="Recovered", color=(0, 1, 0))  # Green
     plt.plot(data["D"], label="Dead", color=(0, 0, 0))  # Black
-    plt.title("Covid-19 Simulation S-I-R")
+    plt.title("Covid-19 Simulation S-I-R-D")
     plt.xlabel("Time")
     plt.ylabel("Population")
     plt.legend()
@@ -200,7 +200,6 @@ class Simulation:
 
         self.swarm.update()
         self.swarm.display(self.screen)
-
         pygame.display.flip()
 
     def run(self) -> None:

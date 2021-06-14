@@ -4,6 +4,8 @@ import pygame
 from experiments.covid.config import config
 from simulation.agent import Agent
 from simulation.utils import *
+from simulation.objects import Objects
+from simulation.swarm import Swarm
 
 
 class Person(Agent):
@@ -43,6 +45,8 @@ class Person(Agent):
         self.start_millis = 0  # Saves the time
         self.started = False  # boolean that indicates whether timer has started or not yet
         self.age = age
+        self.objects = Objects()
+        self.swarm = Swarm([config['screen']['width'], config['screen']['height']])
 
     def update_actions(self) -> None:
         """
@@ -106,14 +110,23 @@ class Person(Agent):
             self.v = [0, 0]
 
     def change_state(self) -> None:
+        # TODO: incubation period
+        # TODO: transition between susceptible and infected based on a prob
+        # TODO: time between infected and house
+        # TODO: after recovering remove house and speed back to what it was
         if self.state == 'S':
             # if susceptible, check each frame rate your neighbors and if any of them is infected u r infected
             neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
             for n in neighbors:
                 if n.state == 'I':  # TODO: maybe include distance with the play
                     self.state = 'I'
-                    if self.should_die():  # once infected it is checked (only once), given the age, the probability to die
+                    # self.max_speed = self.max_speed / 3
+                    self.v = [0, 0]
+                    self.population.add_house(self.pos)
+                    # self.draw_square()
+                    if self.should_die(): # once infected it is checked (only once), given the age, the probability to die
                         self.state = 'D'
+                        # print('\n', self.age)
                     break
 
         if self.state == 'I':
@@ -128,33 +141,43 @@ class Person(Agent):
         # elif self.state == 'D':
         #     print(self.age)
 
+    # def draw_square(self):
+    #
+    #     self.population.add_house(self.pos)
+
     def should_die(self) -> False:
         # the values used beneath are based upon this research:
         # https://www.cdc.gov/coronavirus/2019-ncov/covid-data/investigations-discovery/hospitalization-death-by-age.html
-        if 0 <= self.age <= 19:
+        if 10 <= self.age <= 19:
             dying_prob = np.random.randint(0, config['person']['reference_group_dr'])
             if dying_prob == 1:  # 0.06% chance
                 return True
         elif 20 <= self.age <= 29:
-            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 10))
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr']))
             if dying_prob == 1:  # 10x higher chance to die than the reference age group
                 return True
         elif 30 <= self.age <= 39:
-            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 45))
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr']))
             if dying_prob == 1:  # 45x higher chance to die than the reference age group
                 return True
         elif 40 <= self.age <= 49:
-            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 130))
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 2))
             if dying_prob == 1:  # 130x higher chance to die than the reference age group
                 return True
         elif 50 <= self.age <= 59:
-            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 440))
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 6.5))
             if dying_prob == 1:  # 440x higher chance to die than the reference age group
                 return True
-        elif self.age > 60:
-            # dying_prob = np.random.randint(0, 2) # TODO: this never dies (always samples 0)
-            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 1300))
-            # print(config['person']['reference_group_dr'] / 1300)
+        elif 60 <= self.age <= 69:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 18))
+            if dying_prob == 1:  # 440x higher chance to die than the reference age group
+                return True
+        elif 70 <= self.age <= 79:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 40))
+            if dying_prob == 1:  # 440x higher chance to die than the reference age group
+                return True
+        elif self.age >= 80:
+            dying_prob = np.random.randint(0, round(config['person']['reference_group_dr'] / 74))
             if dying_prob == 1:  # 1300x higher chance to die than the reference age group
                 return True
 
@@ -181,11 +204,13 @@ class Person(Agent):
             random_noise = np.random.uniform(-5.9, 5.9)
             if seconds > 14.81 + random_noise:
                 self.recover()
-        elif self.age > 60:
+        elif self.age >= 60:
             random_noise = np.random.uniform(-5.896, 5.896)
             if seconds > 14.73 + random_noise:
                 self.recover()
 
     def recover(self) -> None:
+        # simple helper method to avoid code repetition
         self.state = 'R'
         self.started = False
+        self.max_speed = self.max_speed*2

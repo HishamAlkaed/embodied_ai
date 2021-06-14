@@ -10,24 +10,25 @@ width  = 800
 
 [population]
 obstacles = false
+maze = false
 
 [person]
 #velocity force
-max_force         = 60.0
+max_force         = 10.0
 #view of neighbor agents
 radius_view       = 30
 #weights for velocity forces
 alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
-reference_group_dr = 1666 ### reference group death ratio => 0.06% = 6/10000 = 1666
+reference_group_dr = 500 ### reference group death ratio => 0.02% = 2/1000 = 1/500
 
 [agent]
 height    = 20
 width     = 10
 mass      = 20
-max_speed = 40.0
-min_speed = 30.0
+max_speed = 30.0
+min_speed = 10.0
 dt        = 0.2
 
 

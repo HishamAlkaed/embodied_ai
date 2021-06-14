@@ -17,7 +17,21 @@ class Population(Swarm):
             num_agents (int):
 
         """
+        # add obstacle/-s to the environment if present
+        if config["population"]["obstacles"]:
+            object_loc = config["base"]["object_location"]
+            scale = [400, 400]
 
+            filename = (
+                "experiments/covid/images/maze.png"
+                if config["population"]["maze"]
+                else "experiments/covid/images/open_square.png"
+            )
+        #
+            self.objects.add_object(
+                file=filename, pos=object_loc, scale=scale, obj_type="obstacle"
+            )
+        some_list = []
         # ToDo: code snippet (not complete) to avoid initializing agents on obstacles
         # given some coordinates and obstacles in the environment, this repositions the agent
         # coordinates = generate_coordinates(self.screen)
@@ -37,31 +51,19 @@ class Population(Swarm):
                     except IndexError:
                         pass
             random_age = random.randint(1, 95)
+            # print(random_age)
+            some_list.append(random_age)
             if index == num_agents-1:
                 self.add_agent(  # patient zero
                     Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', age=random_age))
             self.add_agent(Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', age=random_age))
+        # print(sorted(some_list), len(some_list))
 
+    def add_house(self, pos):
+        self.objects.add_object(
+            file='experiments/covid/images/square.png', pos=pos, scale=[60, 60], obj_type="obstacle"
+        )
 
-
-        # # add obstacle/-s to the environment if present
-        # if config["flock"]["obstacles"]:
-        #     object_loc = config["base"]["object_location"]
-        #
-        #     if config["flock"]["outside"]:
-        #         scale = [300, 300]
-        #     else:
-        #         scale = [800, 800]
-        #
-        #     filename = (
-        #         "experiments/flocking/images/convex.png"
-        #         if config["flock"]["convex"]
-        #         else "experiments/flocking/images/redd.png"
-        #     )
-        #
-        #     self.objects.add_object(
-        #         file=filename, pos=object_loc, scale=scale, obj_type="obstacle"
-        #     )
         #
         #     min_x, max_x = area(object_loc[0], scale[0])
         #     min_y, max_y = area(object_loc[1], scale[1])
