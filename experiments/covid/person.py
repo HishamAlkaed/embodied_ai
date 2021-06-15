@@ -13,7 +13,7 @@ class Person(Agent):
     The Person main class
     """
     def __init__(
-            self, state, pos, v, population, age, index: int, image: str = 'experiments/covid/images/green.png'
+            self, state, pos, v, population, age, index: int, mask=False, image: str = 'experiments/covid/images/orange.png'
     ) -> None:
         """
         Args:
@@ -42,11 +42,20 @@ class Person(Agent):
         self.avoided_obstacles: bool = False
         self.prev_pos = None
         self.prev_v = None
-        self.start_millis = 0  # Saves the time
-        self.started = False  # boolean that indicates whether timer has started or not yet
+        self.start_millis_recovery = 0  # Saves the time for recovery time
+        self.started_recovery = False  # boolean that indicates whether timer has started or not yet (recovery time)
+        self.start_millis_quarantine = 0
+        self.started_quarantine = False
+        self.start_millis_incubation = 0
+        self.started_incubation = False
         self.age = age
         self.objects = Objects()
         self.swarm = Swarm([config['screen']['width'], config['screen']['height']])
+        self.rand_noise = 0 # going from infected to in house
+        self.rand_noise_bol = False
+        self.recover_var = 0
+        self.recover_bol = False
+        self.wearing_mask = mask
 
     def update_actions(self) -> None:
         """
@@ -61,9 +70,10 @@ class Person(Agent):
 
     def general_behaviour(self) -> None:
         ''' this function:
-                1) checks for collisions with any obstacles
-                2) ensures the right image/color for each individual in each state
+            1) checks for collisions with any obstacles
+            2) ensures the right image/color for each individual in each state
         '''
+
         # avoid any obstacles in the environment
         for obstacle in self.population.objects.obstacles:
             collide = pygame.sprite.collide_mask(self, obstacle)
@@ -73,7 +83,12 @@ class Person(Agent):
                 if not self.avoided_obstacles:
                     self.prev_pos = self.pos.copy()
                     self.prev_v = self.v.copy()
-
+                    if obstacle.rect[0]+15 < self.pos[0] < obstacle.rect[0]+obstacle.rect[2]-15 and \
+                            obstacle.rect[1]+15 < self.pos[1] < obstacle.rect[1]+obstacle.rect[3]-15 and\
+                            all(self.v) != 0:
+                        self.pos = [self.pos[0] - obstacle.rect[2], self.pos[1]]
+                        self.v = [-self.v[0], -self.v[1]]
+                        return
                 else:
                     self.pos = self.prev_pos.copy()
                     self.v = self.prev_v.copy()
@@ -85,12 +100,16 @@ class Person(Agent):
         self.prev_v = None
         self.prev_pos = None
         self.avoided_obstacles = False
+        if self.wearing_mask:
+            green = 'experiments/covid/images/green_mask.png'  # for recovered
+            orange = 'experiments/covid/images/orange_mask.png'  # for susceptible
+            red = 'experiments/covid/images/red_mask.png'  # for infected
+        elif not self.wearing_mask:
+            green = 'experiments/covid/images/green_1.png'  # for recovered
+            orange = 'experiments/covid/images/orange.png'  # for susceptible
+            red = 'experiments/covid/images/red.png'  # for infected
 
-        green = 'experiments/covid/images/green_1.png'  # for recovered
-        orange = 'experiments/covid/images/orange.png'  # for susceptible
-        red = 'experiments/covid/images/red.png'  # for infected
         skull = 'experiments/covid/images/skull.png'  # for dead
-
         if self.state == 'S':
             self.image, self.rect = image_with_rect(
                 orange, [config['agent']['width'], config['agent']['height']]
@@ -110,40 +129,77 @@ class Person(Agent):
             self.v = [0, 0]
 
     def change_state(self) -> None:
-        # TODO: incubation period
-        # TODO: transition between susceptible and infected based on a prob
-        # TODO: time between infected and house
-        # TODO: after recovering remove house and speed back to what it was
+        # TODO: mask
+        # TODO: incubation period: transition time between susceptible and infected based on a prob #######DONE#########
+        # TODO: transition time between infected and in house #############DONE###############
+        # TODO: after recovering remove house and speed back to what it was ##########DONE###########
+        # TODO: some of the agents will have initial place within a house of another infected agent #########DONE#######
         if self.state == 'S':
             # if susceptible, check each frame rate your neighbors and if any of them is infected u r infected
-            neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
-            for n in neighbors:
-                if n.state == 'I':  # TODO: maybe include distance with the play
-                    self.state = 'I'
-                    # self.max_speed = self.max_speed / 3
-                    self.v = [0, 0]
-                    self.population.add_house(self.pos)
-                    # self.draw_square()
-                    if self.should_die(): # once infected it is checked (only once), given the age, the probability to die
-                        self.state = 'D'
-                        # print('\n', self.age)
-                    break
+            if not self.started_incubation:
+                neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
+                for n in neighbors:
+                    if n.state == 'I':
+                        # self.infectable()
+                        random_num = np.random.randint(0, 30)
+                        if random_num == 4:
+                            if self.wearing_mask:
+                                random_num1 = np.random.randint(0, 10)
+                                if random_num1 == 4:
+                                    self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                    self.started_incubation = True
+                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                            self.started_incubation = True
+                            break
+            elif self.started_incubation:
+                self.incubation()
 
-        if self.state == 'I':
+        elif self.state == 'I':
             # if infected start timer and check each frame rate whether it has been already enough time to recover or not (given tha age)
-            if not self.started:
-                self.start_millis = pygame.time.get_ticks()  # starter tick
-                self.started = True
-            seconds = (pygame.time.get_ticks() - self.start_millis) / 1000  # calculate how many seconds
-            if self.started:
-                self.recovered_or_not(seconds)
+            if not self.started_recovery:
+                self.start_millis_recovery = pygame.time.get_ticks()  # starter tick
+                self.started_recovery = True
+            seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
+            if self.started_recovery:
+                self.recovered_or_not(seconds_r)
+            if self.index != 39 and self.index != 38: # patient zero
+                if not self.started_quarantine:
+                    self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
+                    self.started_quarantine = True
+                if self.started_quarantine:
+                    if not self.rand_noise_bol:
+                        self.rand_noise = np.random.uniform(2, 5)
+                        self.rand_noise_bol = True
+                    elif self.rand_noise_bol:
+                        seconds_q = (
+                            pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
+                        if seconds_q > self.rand_noise:
+                            self.add_house()
+                            self.started_quarantine = False
+        elif self.state == 'R' and all(self.v) == 0:
+            self.recover()
 
-        # elif self.state == 'D':
-        #     print(self.age)
+    def incubation(self):
+        seconds_i = (pygame.time.get_ticks() - self.start_millis_incubation) / 1000  # calculate how many seconds
+        if self.age < 30 and seconds_i > 4.95:
+            self.infected()
+        elif 30 <= self.age <= 39 and seconds_i > 5.78:
+            self.infected()
+        elif 40 <= self.age <= 49 and seconds_i > 5.33:
+            self.infected()
+        elif 50 <= self.age <= 59 and seconds_i > 6.34:
+            self.infected()
+        elif 60 <= self.age <= 69 and seconds_i > 4.69:
+            self.infected()
+        elif self.age >= 70 and seconds_i > 7.56:
+            self.infected()
 
-    # def draw_square(self):
-    #
-    #     self.population.add_house(self.pos)
+    def infected(self):
+        self.started_incubation = False
+        self.state = 'I'
+        self.max_speed = self.max_speed / 3
+        if self.should_die():  # once infected it is checked (only once), given the age, the probability to die
+            self.state = 'D'
 
     def should_die(self) -> False:
         # the values used beneath are based upon this research:
@@ -184,33 +240,32 @@ class Person(Agent):
     def recovered_or_not(self, seconds) -> None:
         # the values used beneath are based upon this research:
         #   https://www.worldometers.info/coronavirus/coronavirus-age-sex-demographics/
-        if 0 <= self.age <= 19:
-            random_noise = np.random.uniform(-5.89, 5.89)
-            if seconds > 13.61 + random_noise:
+        if not self.recover_bol:
+            self.recover_var = np.random.uniform(-5.81, 5.81)
+            self.recover_bol = True
+        elif self.recover_bol:
+            if 0 <= self.age <= 19 and seconds > 13.61 + self.recover_var:
                 self.recover()
-        elif 20 <= self.age <= 29:
-            random_noise = np.random.uniform(-5.81, 5.81)
-            if seconds > 13.97 + random_noise:
+            elif 20 <= self.age <= 29 and seconds > 13.97 + self.recover_var:
                 self.recover()
-        elif 30 <= self.age <= 39:
-            random_noise = np.random.uniform(-6, 6)
-            if seconds > 14.46 + random_noise:
+            elif 30 <= self.age <= 39 and seconds > 14.46 + self.recover_var:
                 self.recover()
-        elif 40 <= self.age <= 49:
-            random_noise = np.random.uniform(-5.72, 5.72)
-            if seconds > 14.79 + random_noise:
+            elif 40 <= self.age <= 49 and seconds > 14.79 + self.recover_var:
                 self.recover()
-        elif 50 <= self.age <= 59:
-            random_noise = np.random.uniform(-5.9, 5.9)
-            if seconds > 14.81 + random_noise:
+            elif 50 <= self.age <= 59 and seconds > 14.81 + self.recover_var:
                 self.recover()
-        elif self.age >= 60:
-            random_noise = np.random.uniform(-5.896, 5.896)
-            if seconds > 14.73 + random_noise:
+            elif self.age >= 60 and seconds > 14.73 + self.recover_var:
                 self.recover()
 
     def recover(self) -> None:
         # simple helper method to avoid code repetition
         self.state = 'R'
-        self.started = False
-        self.max_speed = self.max_speed*2
+        self.started_recovery = False
+
+        self.population.remove_house(self.pos)
+        self.v = self.set_velocity()
+        self.recover_bol = False
+
+    def add_house(self):
+        self.v = [0, 0]
+        self.population.add_house(self.pos)

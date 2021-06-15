@@ -1,16 +1,18 @@
 [base]
 swarm_type       = 'covid'
-n_agents = 40
-object_location  = [400, 400]
+n_agents = 50
+object_location  = [300, 300]
 
 [screen]
 frames = inf
-height = 800
-width  = 800
+height = 500
+width  = 500
 
 [population]
 obstacles = false
 maze = false
+mask = true
+mask_percentage = 1
 
 [person]
 #velocity force
@@ -31,8 +33,7 @@ max_speed = 30.0
 min_speed = 10.0
 dt        = 0.2
 
-
 [wandering]
 wander_angle = 1
-wander_dist = 100
+wander_dist = 1
 wander_radius = 10

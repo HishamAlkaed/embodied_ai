@@ -31,10 +31,8 @@ class Population(Swarm):
             self.objects.add_object(
                 file=filename, pos=object_loc, scale=scale, obj_type="obstacle"
             )
-        some_list = []
         # ToDo: code snippet (not complete) to avoid initializing agents on obstacles
         # given some coordinates and obstacles in the environment, this repositions the agent
-        # coordinates = generate_coordinates(self.screen)
         for index, agent in enumerate(range(num_agents)):
             coordinates = generate_coordinates(self.screen)
             if config["population"]["obstacles"]:  # you need to define this variable
@@ -51,19 +49,30 @@ class Population(Swarm):
                     except IndexError:
                         pass
             random_age = random.randint(1, 95)
-            # print(random_age)
-            some_list.append(random_age)
-            if index == num_agents-1:
-                self.add_agent(  # patient zero
-                    Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', age=random_age))
-            self.add_agent(Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', age=random_age))
-        # print(sorted(some_list), len(some_list))
+            mask_pop_size = num_agents * config['population']['mask_percentage']
+            if index <= mask_pop_size:
+                if index == num_agents-1 or index == num_agents-2:
+                    self.add_agent(  # patient zero
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', mask=True, age=random_age))
+                self.add_agent(
+                    Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', mask=True, age=random_age))
+            else:
+                if index == num_agents-1 or index == num_agents-2:
+                    self.add_agent(  # patient zero
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', age=random_age))
+                self.add_agent(Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', age=random_age))
 
     def add_house(self, pos):
         self.objects.add_object(
-            file='experiments/covid/images/square.png', pos=pos, scale=[60, 60], obj_type="obstacle"
+            file='experiments/covid/images/square.png', pos=pos, scale=[90, 90], obj_type="obstacle"
         )
 
+    def remove_house(self, pos):
+        for i, house in enumerate(self.objects.obstacles):
+            if house.pos[0] == pos[0] and house.pos[1] == pos[1]:
+                # self.objects.obstacles[i].remove()
+                # print(house.pos, pos)
+                house.kill()
         #
         #     min_x, max_x = area(object_loc[0], scale[0])
         #     min_y, max_y = area(object_loc[1], scale[1])
