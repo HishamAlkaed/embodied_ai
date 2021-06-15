@@ -12,7 +12,7 @@ width  = 500
 obstacles = false
 maze = false
 mask = true
-mask_percentage = 1
+mask_percentage = 0.2
 
 [person]
 #velocity force

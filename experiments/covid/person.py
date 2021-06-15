@@ -56,6 +56,10 @@ class Person(Agent):
         self.recover_var = 0
         self.recover_bol = False
         self.wearing_mask = mask
+        self.random_chance_mask = 0
+        self.mask_bol = False
+        self.random_chance = 0
+        self.infect_bol = False
 
     def update_actions(self) -> None:
         """
@@ -129,28 +133,24 @@ class Person(Agent):
             self.v = [0, 0]
 
     def change_state(self) -> None:
-        # TODO: mask
-        # TODO: incubation period: transition time between susceptible and infected based on a prob #######DONE#########
-        # TODO: transition time between infected and in house #############DONE###############
-        # TODO: after recovering remove house and speed back to what it was ##########DONE###########
-        # TODO: some of the agents will have initial place within a house of another infected agent #########DONE#######
         if self.state == 'S':
             # if susceptible, check each frame rate your neighbors and if any of them is infected u r infected
             if not self.started_incubation:
                 neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
                 for n in neighbors:
                     if n.state == 'I':
-                        # self.infectable()
-                        random_num = np.random.randint(0, 30)
-                        if random_num == 4:
+                        if self.infectable():  # if you have a chance to get infected
                             if self.wearing_mask:
-                                random_num1 = np.random.randint(0, 10)
-                                if random_num1 == 4:
+                                if self.mask_prevention():  # if the mask can prevent the agent from getting infected
+                                    break
+                                elif not self.mask_prevention(): # if not then start the incubation time
                                     self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
                                     self.started_incubation = True
-                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
-                            self.started_incubation = True
-                            break
+                                    break
+                            else:   # if no mask
+                                self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                self.started_incubation = True
+                                break
             elif self.started_incubation:
                 self.incubation()
 
@@ -162,7 +162,7 @@ class Person(Agent):
             seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
             if self.started_recovery:
                 self.recovered_or_not(seconds_r)
-            if self.index != 39 and self.index != 38: # patient zero
+            if self.index != config['base']['n_agents'] - 1 and self.index !=  config['base']['n_agents'] - 2: # patient zero
                 if not self.started_quarantine:
                     self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
                     self.started_quarantine = True
@@ -178,6 +178,20 @@ class Person(Agent):
                             self.started_quarantine = False
         elif self.state == 'R' and all(self.v) == 0:
             self.recover()
+
+    def mask_prevention(self) -> True: # 50% lower chance to get infected with mask
+        if not self.mask_bol:
+            self.random_chance_mask = np.random.randint(0, 2)
+            self.mask_bol = True
+        elif self.mask_bol and self.random_chance_mask == 1:
+            return False
+
+    def infectable(self) -> False: # 50% chance to get infected
+        if not self.infect_bol:
+            self.random_chance = np.random.randint(0, 2)
+            self.infect_bol = True
+        elif self.infect_bol and self.random_chance == 1:
+            return True
 
     def incubation(self):
         seconds_i = (pygame.time.get_ticks() - self.start_millis_incubation) / 1000  # calculate how many seconds
