@@ -13,6 +13,7 @@ obstacles = false
 maze = false
 mask = true
 mask_percentage = 0.2
+assymptomatic_percentage = 0.3
 
 [person]
 #velocity force

@@ -87,10 +87,13 @@ class Person(Agent):
                 if not self.avoided_obstacles:
                     self.prev_pos = self.pos.copy()
                     self.prev_v = self.v.copy()
-                    if obstacle.rect[0]+15 < self.pos[0] < obstacle.rect[0]+obstacle.rect[2]-15 and \
-                            obstacle.rect[1]+15 < self.pos[1] < obstacle.rect[1]+obstacle.rect[3]-15 and\
-                            all(self.v) != 0:
-                        self.pos = [self.pos[0] - obstacle.rect[2], self.pos[1]]
+                    # print(obstacle.rect, obstacle.pos, self.pos)
+                    if obstacle.rect[0] < self.pos[0] < obstacle.rect[0]+obstacle.rect[2] and \
+                            obstacle.rect[1] < self.pos[1] < obstacle.rect[1]+obstacle.rect[3] and\
+                            all(self.v) != 0 and any([n for n in self.population.find_neighbors(self, config["person"]["radius_view"]) \
+                                                      if all(n.v) == 0 and n.state == 'I']):
+                        # print('\n', obstacle.rect, obstacle.pos, self.pos)
+                        self.pos = np.array([self.pos[0] - obstacle.rect[2], self.pos[1]])
                         self.v = [-self.v[0], -self.v[1]]
                         return
                 else:
@@ -139,6 +142,7 @@ class Person(Agent):
                 neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
                 for n in neighbors:
                     if n.state == 'I':
+
                         if self.infectable():  # if you have a chance to get infected
                             if self.wearing_mask:
                                 if self.mask_prevention():  # if the mask can prevent the agent from getting infected
@@ -174,6 +178,7 @@ class Person(Agent):
                         seconds_q = (
                             pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
                         if seconds_q > self.rand_noise:
+
                             self.add_house()
                             self.started_quarantine = False
         elif self.state == 'R' and all(self.v) == 0:
@@ -186,9 +191,9 @@ class Person(Agent):
         elif self.mask_bol and self.random_chance_mask == 1:
             return False
 
-    def infectable(self) -> False: # 50% chance to get infected
+    def infectable(self) -> False: # 10% chance to get infected
         if not self.infect_bol:
-            self.random_chance = np.random.randint(0, 2)
+            self.random_chance = np.random.randint(0, 10)
             self.infect_bol = True
         elif self.infect_bol and self.random_chance == 1:
             return True

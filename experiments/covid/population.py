@@ -50,6 +50,7 @@ class Population(Swarm):
                         pass
             random_age = random.randint(1, 95)
             mask_pop_size = num_agents * config['population']['mask_percentage']
+
             if index <= mask_pop_size:
                 if index == num_agents-1 or index == num_agents-2:
                     self.add_agent(  # patient zero
