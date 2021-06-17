@@ -49,19 +49,42 @@ class Population(Swarm):
                     except IndexError:
                         pass
             random_age = random.randint(1, 95)
-            mask_pop_size = num_agents * config['population']['mask_percentage']
+            deniers_pop_size = num_agents * config['population']['deniers_percentage']
+            if config['population']['mask']:
+                if index < deniers_pop_size:
+                    if index == num_agents - 1 or index == num_agents - 2 or index == num_agents - 3:
+                        self.add_agent(  # patient zero
+                            Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I',
+                                   denier=True, age=random_age))
+                    self.add_agent(
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', denier=True,
+                               age=random_age))
+                else:
+                    if index == num_agents - 1 or index == num_agents - 2 or index == num_agents - 3:
+                        self.add_agent(  # patient zero
+                            Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I',
+                                age=random_age))
+                    self.add_agent(
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', mask=True,
+                               age=random_age))
 
-            if index <= mask_pop_size:
-                if index == num_agents-1 or index == num_agents-2:
-                    self.add_agent(  # patient zero
-                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', mask=True, age=random_age))
-                self.add_agent(
-                    Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', mask=True, age=random_age))
-            else:
-                if index == num_agents-1 or index == num_agents-2:
-                    self.add_agent(  # patient zero
-                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I', age=random_age))
-                self.add_agent(Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', age=random_age))
+            elif not config['population']['mask']:
+                if index < deniers_pop_size:
+                    if index == num_agents - 1 or index == num_agents - 2 or index == num_agents - 3:
+                        self.add_agent(  # patient zero
+                            Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I',
+                                   denier=True, age=random_age))
+                    self.add_agent(
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S', denier=True,
+                               age=random_age))
+                else:
+                    if index == num_agents - 1 or index == num_agents - 2 or index == num_agents - 3:
+                        self.add_agent(  # patient zero
+                            Person(pos=np.array(coordinates), v=None, population=self, index=index, state='I',
+                                   age=random_age))
+                    self.add_agent(
+                        Person(pos=np.array(coordinates), v=None, population=self, index=index, state='S',
+                               age=random_age))
 
     def add_house(self, pos):
         self.objects.add_object(
@@ -74,29 +97,3 @@ class Population(Swarm):
                 # self.objects.obstacles[i].remove()
                 # print(house.pos, pos)
                 house.kill()
-        #
-        #     min_x, max_x = area(object_loc[0], scale[0])
-        #     min_y, max_y = area(object_loc[1], scale[1])
-        #
-        # # add agents to the environment
-        # for index, agent in enumerate(range(num_agents)):
-        #     coordinates = generate_coordinates(self.screen)
-        #
-        #     # if obstacles present re-estimate the corrdinates
-        #     if config["flock"]["obstacles"]:
-        #         if config["flock"]["outside"]:
-        #             while (
-        #                     max_x >= coordinates[0] >= min_x
-        #                     and max_y >= coordinates[1] >= min_y
-        #             ):
-        #                 coordinates = generate_coordinates(self.screen)
-        #         else:
-        #             while (
-        #                 coordinates[0] >= max_x
-        #                 or coordinates[0] <= min_x
-        #                 or coordinates[1] >= max_y
-        #                 or coordinates[1] <= min_y
-        #             ):
-        #                 coordinates = generate_coordinates(self.screen)
-        #
-        #     self.add_agent(Boid(pos=np.array(coordinates), v=None, flock=self, index=index))

@@ -15,57 +15,6 @@ from experiments.flocking.flock import Flock
 counter_inside_right = 0 # counts the number of roaches in the right site
 counter_inside_left = 0 # counts the number of roaches in the left site
 
-
-# def append_to_data(data_tuple): # tuple left than right
-#     right_data = open('experiments/aggregation/data_right_bs.csv', 'r+') # open file for reading
-#     left_data = open('experiments/aggregation/data_left_bs.csv', 'r+')
-#     right_lines = right_data.readlines() # read lines
-#     left_lines = left_data.readlines()
-#
-#     if not right_lines[-1][-1].isnumeric():
-#         right_lines[-1] += str(data_tuple[1])  # change the copy
-#         left_lines[-1] += str(data_tuple[0])
-#     else:
-#         right_lines[-1] += ',' + str(data_tuple[1])  # change the copy
-#         left_lines[-1] += ',' + str(data_tuple[0])
-#
-#     with open('experiments/aggregation/data_right_bs.csv', 'w+', newline='') as result_file:
-#         # wr = csv.writer(result_file, dialect='excel')
-#         # print(right_list)
-#         result_file.writelines(right_lines) # update last line with the made copy
-#     with open('experiments/aggregation/data_left_bs.csv', 'w+', newline='') as result_file:
-#         # wr = csv.writer(result_file, dialect='excel')
-#         result_file.writelines(left_lines)
-#
-#
-# def start_recording():
-#     with open('experiments/aggregation/data_right_bs.csv', 'a', newline='\n') as result_file:
-#         wr = csv.writer(result_file, dialect='excel')
-#         wr.writerow([' '])
-#     with open('experiments/aggregation/data_left_bs.csv', 'a', newline='\n') as result_file:
-#         wr = csv.writer(result_file, dialect='excel')
-#         wr.writerow([' '])
-#
-#
-# def save_history(object, start_time):
-#     global counter_inside_left
-#     global counter_inside_right
-#     if int(str(time.time() - start_time).split('.')[0]) % 5 == 0 and int(str(time.time() - start_time).split('.')[1][0]) == 0:
-#         for agent in object.swarm.agents:
-#             collide1 = pygame.sprite.collide_mask(agent, object.swarm.objects.sites.sprites()[0])
-#             collide2 = pygame.sprite.collide_mask(agent, object.swarm.objects.sites.sprites()[1])
-#             if collide1 and all(agent.v) == 0:
-#                 counter_inside_right += 1
-#             elif collide2 and all(agent.v) == 0:
-#                 counter_inside_left += 1
-#         # list_right.append(counter_inside_right)
-#         # list_left.append(counter_inside_left)
-#         append_to_data(tuple((counter_inside_left, counter_inside_right)))
-#
-#         counter_inside_left = 0
-#         counter_inside_right = 0
-
-
 def _plot_covid(data) -> None:
     """
     Plot the data related to the covid experiment. The plot is based on the number of Susceptible,
@@ -76,22 +25,53 @@ def _plot_covid(data) -> None:
         data:
 
     """
+    susceptible = []
+    infected = []
+    recovered = []
+    dead = []
+    total_dead = []
+    total_recovered = []
+    total_infected = []
+
+    save_run(data)
+    with open('experiments/covid/data.csv', 'r', newline='\n') as result_file:
+        for i, line in enumerate(result_file):
+            if i > 0:
+                for index, list in enumerate(line.split(',')):
+                    if index == 0:
+                        susceptible.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 1:
+                        infected.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 2:
+                        recovered.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 3:
+                        dead.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 4:
+                        total_recovered.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 5:
+                        total_dead.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 6:
+                        total_infected.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+
     output_name = "experiments/covid/plots/Covid-19-SIR%s.png" % time.strftime(
         "-%m.%d.%y_%H.%M", time.localtime()
     )
+
     fig = plt.figure()
-    plt.plot(data["S"], label="Susceptible", color=(1, 0.5, 0))  # Orange
-    plt.plot(data["I"], label="Infected", color=(1, 0, 0))  # Red
-    plt.plot(data["R"], label="Recovered", color=(0, 1, 0))  # Green
-    plt.plot(data["D"], label="Dead", color=(0, 0, 0))  # Black
-    plt.title("Covid-19 Simulation S-I-R-D")
-    plt.xlabel("Time")
+
+    plt.plot(avgNestedLists(susceptible), label="Susceptible", color=(1, 0.5, 0))  # Orange
+    plt.plot(avgNestedLists(infected), label="Infected", color=(1, 0, 0))  # Red
+    plt.plot(avgNestedLists(recovered), label="Recovered", color=(0, 1, 0))  # Green
+    plt.plot(avgNestedLists(dead), label="Dead", color=(0, 0, 0))  # Black
+    plt.title("Covid-19 Simulation (masks & quarantine & 50% deniers)")
+    plt.xlabel("60 Seconds (60 Days)")
     plt.ylabel("Population")
+    plt.tick_params(labelbottom=False)
     plt.legend()
     fig.savefig(output_name)
-    # print(data)
-    # save_run(data)
     plt.show()
+    print(
+        f'average dead over all runs: {avgNestedLists(total_dead)} \n average recovered over all runs: {avgNestedLists(total_recovered)} \n average infected over all runs: {avgNestedLists(total_infected)}')
 
 
 def _plot_flock() -> None:
@@ -113,14 +93,44 @@ def _plot_aggregation() -> None:
     plt.title('Different size sites')
     plt.show()
 
+def avgNestedLists(nested_vals):
+    """
+    Averages a 2-D array and returns a 1-D array of all of the columns
+    averaged together, regardless of their dimensions.
+    """
+    output = []
+    maximum = 0
+    for lst in nested_vals:
+        if len(lst) > maximum:
+            maximum = len(lst)
+    for index in range(maximum): # Go through each index of longest list
+        temp = []
+        for lst in nested_vals: # Go through each list
+            if index < len(lst): # If not an index error
+                temp.append(lst[index])
+        output.append(np.nanmean(temp))
+    return output
 
-# def save_run(data):
-#     df = pd.read_csv('experiments/covid/data.csv')
-#     df['S'] = data['S']
-#     df['S'] = data['S']
-#     df['S'] = data['S']
-#     df['S'] = data['S']
+def save_run(data):
+    start_recording()
+    append_to_data(data)
+    # df = pd.read_csv('experiments/covid/data.csv')
+    # df['S'] = data['S']
+    # df['S'] = data['S']
+    # df['S'] = data['S']
+    # df['S'] = data['S']
 
+def start_recording():
+    with open('experiments/covid/data.csv', 'a', newline='\n') as result_file:
+        wr = csv.writer(result_file, dialect='excel')
+        wr.writerow([' '])
+
+def append_to_data(datax): # tuple left than right
+    lines = str([str(datax["S"]).replace(',', ' ')[1:-1], str(datax["I"]).replace(',', ' ')[1:-1],
+                 str(datax["R"]).replace(',', ' ')[1:-1], str(datax["D"]).replace(',', ' ')[1:-1],
+                 datax["R"][-1], datax["D"][-1], datax["I"][-1]])[1:-1] # change the copy
+    with open('experiments/covid/data.csv', 'a', newline='') as result_file:
+        result_file.writelines(lines) # update last line with the made copy
 
 """
 General simulation pipeline, suitable for all experiments 

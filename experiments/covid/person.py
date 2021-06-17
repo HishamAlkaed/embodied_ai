@@ -13,7 +13,7 @@ class Person(Agent):
     The Person main class
     """
     def __init__(
-            self, state, pos, v, population, age, index: int, mask=False, image: str = 'experiments/covid/images/orange.png'
+            self, state, pos, v, population, age, index: int, mask=False, denier=False, image: str = 'experiments/covid/images/orange.png'
     ) -> None:
         """
         Args:
@@ -60,6 +60,9 @@ class Person(Agent):
         self.mask_bol = False
         self.random_chance = 0
         self.infect_bol = False
+        self.assym_chance = 0
+        self.assym_bol = False
+        self.denier = denier
 
     def update_actions(self) -> None:
         """
@@ -79,34 +82,35 @@ class Person(Agent):
         '''
 
         # avoid any obstacles in the environment
-        for obstacle in self.population.objects.obstacles:
-            collide = pygame.sprite.collide_mask(self, obstacle)
-            if bool(collide):
-                # If person gets stuck because when avoiding the obstacle ended up inside of the object,
-                # resets the position to the previous one and do a 180 degree turn back
-                if not self.avoided_obstacles:
-                    self.prev_pos = self.pos.copy()
-                    self.prev_v = self.v.copy()
-                    # print(obstacle.rect, obstacle.pos, self.pos)
-                    if obstacle.rect[0] < self.pos[0] < obstacle.rect[0]+obstacle.rect[2] and \
-                            obstacle.rect[1] < self.pos[1] < obstacle.rect[1]+obstacle.rect[3] and\
-                            all(self.v) != 0 and any([n for n in self.population.find_neighbors(self, config["person"]["radius_view"]) \
-                                                      if all(n.v) == 0 and n.state == 'I']):
-                        # print('\n', obstacle.rect, obstacle.pos, self.pos)
-                        self.pos = np.array([self.pos[0] - obstacle.rect[2], self.pos[1]])
-                        self.v = [-self.v[0], -self.v[1]]
-                        return
-                else:
-                    self.pos = self.prev_pos.copy()
-                    self.v = self.prev_v.copy()
 
-                self.avoided_obstacles = True
-                self.avoid_obstacle()
-                return
-
-        self.prev_v = None
-        self.prev_pos = None
-        self.avoided_obstacles = False
+        # for obstacle in self.population.objects.obstacles:
+        #     collide = pygame.sprite.collide_mask(self, obstacle)
+        #     if bool(collide):
+        #         # If person gets stuck because when avoiding the obstacle ended up inside of the object,
+        #         # resets the position to the previous one and do a 180 degree turn back
+        #         if not self.avoided_obstacles:
+        #             self.prev_pos = self.pos.copy()
+        #             self.prev_v = self.v.copy()
+        #             # print(obstacle.rect, obstacle.pos, self.pos)
+        #             if obstacle.rect[0] < self.pos[0] < obstacle.rect[0]+obstacle.rect[2] and \
+        #                     obstacle.rect[1] < self.pos[1] < obstacle.rect[1]+obstacle.rect[3] and\
+        #                     all(self.v) != 0 and any([n for n in self.population.find_neighbors(self, config["person"]["radius_view"]) \
+        #                                               if all(n.v) == 0 and n.state == 'I']):
+        #                 # print('\n', obstacle.rect, obstacle.pos, self.pos)
+        #                 self.pos = np.array([self.pos[0] - obstacle.rect[2], self.pos[1]])
+        #                 self.v = [-self.v[0], -self.v[1]]
+        #                 return
+        #         else:
+        #             self.pos = self.prev_pos.copy()
+        #             self.v = self.prev_v.copy()
+        #
+        #         self.avoided_obstacles = True
+        #         self.avoid_obstacle()
+        #         return
+        #
+        # self.prev_v = None
+        # self.prev_pos = None
+        # self.avoided_obstacles = False
         if self.wearing_mask:
             green = 'experiments/covid/images/green_mask.png'  # for recovered
             orange = 'experiments/covid/images/orange_mask.png'  # for susceptible
@@ -141,19 +145,20 @@ class Person(Agent):
             if not self.started_incubation:
                 neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
                 for n in neighbors:
-                    if n.state == 'I':
-
+                    if n.state == 'I' and not all(n.v) == 0:
                         if self.infectable():  # if you have a chance to get infected
                             if self.wearing_mask:
-                                if self.mask_prevention():  # if the mask can prevent the agent from getting infected
+                                if not self.mask_prevention():  # if the mask can prevent the agent from getting infected
                                     break
-                                elif not self.mask_prevention(): # if not then start the incubation time
+                                elif self.mask_prevention(): # if not then start the incubation time
                                     self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
                                     self.started_incubation = True
+                                    # print(n.v)
                                     break
                             else:   # if no mask
                                 self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
                                 self.started_incubation = True
+                                # print(n.v)
                                 break
             elif self.started_incubation:
                 self.incubation()
@@ -166,36 +171,48 @@ class Person(Agent):
             seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
             if self.started_recovery:
                 self.recovered_or_not(seconds_r)
-            if self.index != config['base']['n_agents'] - 1 and self.index !=  config['base']['n_agents'] - 2: # patient zero
+            if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2\
+                    and self.index != config['base']['n_agents'] - 3:
+                    # and self.index !=  config['base']['n_agents'] - 4\
+                    # and self.index !=  config['base']['n_agents'] - 5: # patient zero
                 if not self.started_quarantine:
                     self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
                     self.started_quarantine = True
                 if self.started_quarantine:
                     if not self.rand_noise_bol:
-                        self.rand_noise = np.random.uniform(2, 5)
+                        # self.rand_noise = np.random.uniform(2, 5)
                         self.rand_noise_bol = True
                     elif self.rand_noise_bol:
                         seconds_q = (
                             pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
-                        if seconds_q > self.rand_noise:
-
-                            self.add_house()
-                            self.started_quarantine = False
+                        if seconds_q > 1:
+                            if not self.denier:
+                                # print(self.index)
+                                if not self.asymptomatic():
+                                    self.add_house()
+                                    self.started_quarantine = False
         elif self.state == 'R' and all(self.v) == 0:
             self.recover()
 
-    def mask_prevention(self) -> True: # 50% lower chance to get infected with mask
+    def mask_prevention(self) -> False: # 50% lower chance to get infected with mask
         if not self.mask_bol:
-            self.random_chance_mask = np.random.randint(0, 2)
+            self.random_chance_mask = np.random.randint(0, 100)
             self.mask_bol = True
-        elif self.mask_bol and self.random_chance_mask == 1:
-            return False
+        elif self.mask_bol and self.random_chance_mask < 38:
+            return True
 
     def infectable(self) -> False: # 10% chance to get infected
         if not self.infect_bol:
-            self.random_chance = np.random.randint(0, 10)
+            self.random_chance = np.random.randint(0, 100)
             self.infect_bol = True
-        elif self.infect_bol and self.random_chance == 1:
+        elif self.infect_bol and self.random_chance < 90:
+            return True
+
+    def asymptomatic(self) -> False: # true if you are asymptomatic
+        if not self.assym_bol:
+            self.assym_chance = np.random.randint(0, 100) # 30%
+            self.assym_bol = True
+        if self.assym_bol and self.assym_chance < 30:
             return True
 
     def incubation(self):
@@ -216,7 +233,8 @@ class Person(Agent):
     def infected(self):
         self.started_incubation = False
         self.state = 'I'
-        self.max_speed = self.max_speed / 3
+        if not self.asymptomatic():
+            self.max_speed = self.max_speed / 3
         if self.should_die():  # once infected it is checked (only once), given the age, the probability to die
             self.state = 'D'
 

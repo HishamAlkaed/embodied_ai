@@ -4,7 +4,7 @@ n_agents = 50
 object_location  = [300, 300]
 
 [screen]
-frames = inf
+frames = 666
 height = 500
 width  = 500
 
@@ -12,8 +12,7 @@ width  = 500
 obstacles = false
 maze = false
 mask = true
-mask_percentage = 0.2
-assymptomatic_percentage = 0.3
+deniers_percentage = 0.5
 
 [person]
 #velocity force
