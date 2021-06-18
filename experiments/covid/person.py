@@ -62,7 +62,13 @@ class Person(Agent):
         self.infect_bol = False
         self.assym_chance = 0
         self.assym_bol = False
+        self.asymp_bol = False
+        self.random_chance_asymp = 0
         self.denier = denier
+        self.isolation_in_incubation_bol = False
+        self.chance_isolation_in_incubation = 0
+        self.preventive_isolation_timer = 0
+        self.preventive_isolation_bol = False
 
     def update_actions(self) -> None:
         """
@@ -145,21 +151,59 @@ class Person(Agent):
             if not self.started_incubation:
                 neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
                 for n in neighbors:
-                    if n.state == 'I' and not all(n.v) == 0:
-                        if self.infectable():  # if you have a chance to get infected
-                            if self.wearing_mask:
-                                if not self.mask_prevention():  # if the mask can prevent the agent from getting infected
-                                    break
-                                elif self.mask_prevention(): # if not then start the incubation time
-                                    self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
-                                    self.started_incubation = True
-                                    # print(n.v)
-                                    break
-                            else:   # if no mask
-                                self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
-                                self.started_incubation = True
-                                # print(n.v)
-                                break
+                    if (n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0) or (self.state == 'S' and all(self.v) == 0):
+                        if self.preventive_isolation_chance():
+                            if not self.denier:
+                                self.preventive_isolation()
+                            if self.infectable():  # if you have a chance to get infected
+                                if self.wearing_mask:
+                                    if not self.mask_prevention():  # if the mask can prevent the agent from getting infected
+                                        break
+                                    elif self.mask_prevention(): # if not then start the incubation time
+                                        if n.asymptomatic():
+                                            if self.asymptomatic_chance():
+                                                self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                                self.started_incubation = True
+                                                break
+                                        else:
+                                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                            self.started_incubation = True
+                                            break
+                                else:   # if no mask
+                                    if n.asymptomatic():
+                                        if self.asymptomatic_chance():
+                                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                            self.started_incubation = True
+                                            break
+                                    else:
+                                        self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                        self.started_incubation = True
+                                        break
+                        elif self.infectable():  # if you have a chance to get infected
+                                if self.wearing_mask:
+                                    if not self.mask_prevention():  # if the mask can prevent the agent from getting infected
+                                        break
+                                    elif self.mask_prevention(): # if not then start the incubation time
+                                        if n.asymptomatic():
+                                            if self.asymptomatic_chance():
+                                                self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                                self.started_incubation = True
+                                                break
+                                        else:
+                                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                            self.started_incubation = True
+                                            break
+                                else:   # if no mask
+                                    if n.asymptomatic():
+                                        if self.asymptomatic_chance():
+                                            self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                            self.started_incubation = True
+                                            break
+                                    else:
+                                        self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
+                                        self.started_incubation = True
+                                        break
+
             elif self.started_incubation:
                 self.incubation()
 
@@ -173,26 +217,29 @@ class Person(Agent):
                 self.recovered_or_not(seconds_r)
             if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2\
                     and self.index != config['base']['n_agents'] - 3:
-                    # and self.index !=  config['base']['n_agents'] - 4\
-                    # and self.index !=  config['base']['n_agents'] - 5: # patient zero
                 if not self.started_quarantine:
                     self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
                     self.started_quarantine = True
                 if self.started_quarantine:
                     if not self.rand_noise_bol:
-                        # self.rand_noise = np.random.uniform(2, 5)
                         self.rand_noise_bol = True
                     elif self.rand_noise_bol:
                         seconds_q = (
                             pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
                         if seconds_q > 1:
                             if not self.denier:
-                                # print(self.index)
                                 if not self.asymptomatic():
                                     self.add_house()
                                     self.started_quarantine = False
         elif self.state == 'R' and all(self.v) == 0:
             self.recover()
+
+    def asymptomatic_chance(self) -> False: # 42% lower chance to get infected if the contageous person is asymptomatic
+        if not self.asymp_bol:
+            self.random_chance_asymp = np.random.randint(0, 100)
+            self.asymp_bol = True
+        elif self.asymp_bol and self.random_chance_asymp < 42:
+            return True
 
     def mask_prevention(self) -> False: # 50% lower chance to get infected with mask
         if not self.mask_bol:
@@ -212,7 +259,7 @@ class Person(Agent):
         if not self.assym_bol:
             self.assym_chance = np.random.randint(0, 100) # 30%
             self.assym_bol = True
-        if self.assym_bol and self.assym_chance < 30:
+        if self.assym_bol and self.assym_chance < 17:
             return True
 
     def incubation(self):
@@ -229,6 +276,27 @@ class Person(Agent):
             self.infected()
         elif self.age >= 70 and seconds_i > 7.56:
             self.infected()
+
+    def preventive_isolation(self):
+
+        if not self.preventive_isolation_bol:
+            self.add_house()
+            self.v = [0, 0]
+            self.preventive_isolation_timer = pygame.time.get_ticks()
+            self.preventive_isolation_bol = True
+        if self.preventive_isolation_bol:
+            seconds_p = (pygame.time.get_ticks() - self.preventive_isolation_timer) / 1000
+            if seconds_p >= 10:
+                if not self.state == 'I':
+                    self.population.remove_house(self.pos)
+                    self.v = self.set_velocity()
+
+    def preventive_isolation_chance(self) -> False:
+        if not self.isolation_in_incubation_bol:
+            self.chance_isolation_in_incubation = np.random.randint(0, 100)
+            self.isolation_in_incubation_bol = True
+        elif self.isolation_in_incubation_bol and self.chance_isolation_in_incubation < 15:
+            return True
 
     def infected(self):
         self.started_incubation = False

@@ -11,8 +11,8 @@ width  = 500
 [population]
 obstacles = false
 maze = false
-mask = true
-deniers_percentage = 0.5
+mask = false
+deniers_percentage = 0
 
 [person]
 #velocity force
