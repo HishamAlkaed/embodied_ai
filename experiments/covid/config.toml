@@ -11,7 +11,7 @@ width  = 500
 [population]
 obstacles = false
 maze = false
-mask = false
+mask = true
 deniers_percentage = 0
 
 [person]
