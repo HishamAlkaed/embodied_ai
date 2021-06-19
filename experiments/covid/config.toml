@@ -12,7 +12,8 @@ width  = 500
 obstacles = false
 maze = false
 mask = true
-deniers_percentage = 0
+deniers_percentage = 0.5
+curfew = true
 
 [person]
 #velocity force

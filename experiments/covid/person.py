@@ -69,6 +69,8 @@ class Person(Agent):
     self.chance_isolation_in_incubation = 0
     self.preventive_isolation_timer = 0
     self.preventive_isolation_bol = False
+    self.previous_time = pygame.time.get_ticks()
+    self.speed_before_curfew = self.v
 
   def update_actions(self) -> None:
     """
@@ -79,6 +81,7 @@ class Person(Agent):
     """
     self.general_behaviour()
     self.change_state()
+    self.apply_curfew()
     self.population.datapoints.append(self.state)
 
   def general_behaviour(self) -> None:
@@ -145,14 +148,31 @@ class Person(Agent):
       )
       self.v = [0, 0]
 
+  def apply_curfew(self):
+    if config['population']['curfew']:
+      if self.denier or self.state == 'D':
+        pass
+      else:
+        if (pygame.time.get_ticks() - self.previous_time) < 500: # no curfew
+          if not self.in_house(self.pos):
+            self.v = self.speed_before_curfew
+        elif 500 < (pygame.time.get_ticks() - self.previous_time) < 1000: # curfew
+          if any(self.v) != 0:
+            self.speed_before_curfew = self.v
+            self.v = [0,0]
+        elif (pygame.time.get_ticks() - self.previous_time) > 1000: # reset timer
+          self.previous_time = pygame.time.get_ticks()
+
   def change_state(self) -> None:
     # if 10 < (pygame.time.get_ticks() / 1000) < 15:
     if self.state == 'S':
       # if susceptible, check your neighbors each frame rate
       if not self.started_incubation:
+        if not self.denier and self.preventive_isolation_bol:
+          self.preventive_isolation()
         neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
         for n in neighbors:
-          if (n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0) or (all(self.v) == 0):
+          if (n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0):
             if self.preventive_isolation_chance(): # 15% chance to go in self preventive quarantine
               # if you have a chance to get infected & called only once for the agent that caused us to go in preventive quarantine
               if self.infectable() and not self.preventive_isolation_bol: # preventive_isolation_bol becomes true once preventive_isolation is called
@@ -270,6 +290,7 @@ class Person(Agent):
         if not self.state == 'I':
           self.population.remove_house(self.pos)
           self.v = self.set_velocity()
+        self.preventive_isolation_bol = False
 
   def preventive_isolation_chance(self) -> False:
     if not self.isolation_in_incubation_bol:
@@ -358,3 +379,8 @@ class Person(Agent):
   def start_incubation_timer(self):
     self.start_millis_incubation = pygame.time.get_ticks()  # starter tick
     self.started_incubation = True
+
+  def in_house(self, pos) -> False:
+    for obstacle in self.population.objects.obstacles:
+      if obstacle.pos[1] == pos[1] and obstacle.pos[0] == pos[0]:
+        return True
