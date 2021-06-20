@@ -12,7 +12,7 @@ width  = 500
 obstacles = false
 maze = false
 mask = true
-deniers_percentage = 0.5
+deniers_percentage = 0.45
 curfew = true
 
 [person]

@@ -173,7 +173,7 @@ class Person(Agent):
         neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
         for n in neighbors:
           if (n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0):
-            if self.preventive_isolation_chance(): # 15% chance to go in self preventive quarantine
+            if self.preventive_isolation_chance():  # 15% chance to go in self preventive quarantine
               # if you have a chance to get infected & called only once for the agent that caused us to go in preventive quarantine
               if self.infectable() and not self.preventive_isolation_bol: # preventive_isolation_bol becomes true once preventive_isolation is called
                 if self.wearing_mask and not self.mask_prevention(): # if u wear a mask and it prevents you from infection
@@ -182,11 +182,11 @@ class Person(Agent):
                   if n.asymptomatic():
                     if self.asymptomatic_chance():
                       self.start_incubation_timer()
-                      print(self.v, n.v)
+                      # print(self.v, n.v)
                       break
                   else:
                     self.start_incubation_timer()
-                    print(self.v, n.v)
+                    # print(self.v, n.v)
                     break
               if not self.denier:
                 self.preventive_isolation()
@@ -197,11 +197,11 @@ class Person(Agent):
                 if n.asymptomatic():
                   if self.asymptomatic_chance():
                     self.start_incubation_timer()
-                    print(self.v, n.v)
+                    # print(self.v, n.v)
                     break
                 else:
                   self.start_incubation_timer()
-                  print(self.v, n.v)
+                  # print(self.v, n.v)
                   break
 
       elif self.started_incubation:
