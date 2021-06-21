@@ -29,6 +29,7 @@ def _plot_covid(data) -> None:
     infected = []
     recovered = []
     dead = []
+    hospitalized = []
     total_dead = []
     total_recovered = []
     total_infected = []
@@ -47,10 +48,12 @@ def _plot_covid(data) -> None:
                     elif index == 3:
                         dead.append(np.array(list[1:].replace("'", '').split(), dtype=int))
                     elif index == 4:
-                        total_recovered.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                        hospitalized.append(np.array(list[1:].replace("'", '').split(), dtype=int))
                     elif index == 5:
-                        total_dead.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                        total_recovered.append(np.array(list[1:].replace("'", '').split(), dtype=int))
                     elif index == 6:
+                        total_dead.append(np.array(list[1:].replace("'", '').split(), dtype=int))
+                    elif index == 7:
                         total_infected.append(np.array(list[1:].replace("'", '').split(), dtype=int))
 
     output_name = "experiments/covid/plots/Covid-19-SIR%s.png" % time.strftime(
@@ -63,6 +66,7 @@ def _plot_covid(data) -> None:
     plt.plot(avgNestedLists(infected), label="Infected", color=(1, 0, 0))  # Red
     plt.plot(avgNestedLists(recovered), label="Recovered", color=(0, 1, 0))  # Green
     plt.plot(avgNestedLists(dead), label="Dead", color=(0, 0, 0))  # Black
+    plt.plot(avgNestedLists(hospitalized), label="Hospitalized", color=(0, 0, 1))  # Blue
     plt.title("Covid-19 Simulation (masks & quarantine & 50% deniers)")
     plt.xlabel("60 Seconds (60 Days)")
     plt.ylabel("Population")
@@ -128,6 +132,7 @@ def start_recording():
 def append_to_data(datax): # tuple left than right
     lines = str([str(datax["S"]).replace(',', ' ')[1:-1], str(datax["I"]).replace(',', ' ')[1:-1],
                  str(datax["R"]).replace(',', ' ')[1:-1], str(datax["D"]).replace(',', ' ')[1:-1],
+                 str(datax["H"]).replace(',', ' ')[1:-1],
                  datax["R"][-1], datax["D"][-1], datax["I"][-1]])[1:-1] # change the copy
     with open('experiments/covid/data.csv', 'a', newline='') as result_file:
         result_file.writelines(lines) # update last line with the made copy

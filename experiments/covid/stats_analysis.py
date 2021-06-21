@@ -48,8 +48,8 @@ infected_sum = np.sum([total_recovered, total_dead, total_infected], axis=0)
 # print(model_infected.summary())
 
 # uncomment those lines for total infected regression table/model (deniers & total dead)
-# model_death = sm.OLS(deniers, total_dead).fit()
-# print(model_death.summary())
+model_death = sm.OLS(deniers, total_dead).fit()
+print(model_death.summary())
 
 # uncomment those lines for total infected regression table/model (deniers & peak of infected)
 # model_peak = sm.OLS(deniers, infected_max).fit()

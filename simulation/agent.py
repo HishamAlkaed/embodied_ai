@@ -139,8 +139,8 @@ class Agent(pygame.sprite.Sprite):  # super class
 
         """
         self._v = v
-        if self.image_file:
-            self._rotate_image()
+        # if self.image_file:
+        #     self._rotate_image()
 
     def _rotate_image(self) -> None:
         """

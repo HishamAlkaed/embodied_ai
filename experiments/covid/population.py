@@ -18,19 +18,19 @@ class Population(Swarm):
 
         """
         # add obstacle/-s to the environment if present
-        if config["population"]["obstacles"]:
-            object_loc = config["base"]["object_location"]
-            scale = [400, 400]
-
-            filename = (
-                "experiments/covid/images/maze.png"
-                if config["population"]["maze"]
-                else "experiments/covid/images/open_square.png"
-            )
+        # if config["population"]["obstacles"]:
+        #     object_loc = config["base"]["object_location"]
+        #     scale = [250, 250]
         #
-            self.objects.add_object(
-                file=filename, pos=object_loc, scale=scale, obj_type="obstacle"
-            )
+        #     filename = (
+        #         "experiments/covid/images/maze.png"
+        #         if config["population"]["hospital"]
+        #         else "experiments/covid/images/open_square.png"
+        #     )
+        # #
+        #     self.objects.add_object(
+        #         file=filename, pos=object_loc, scale=scale, obj_type="obstacle"
+        #     )
         # ToDo: code snippet (not complete) to avoid initializing agents on obstacles
         # given some coordinates and obstacles in the environment, this repositions the agent
         for index, agent in enumerate(range(num_agents)):
@@ -88,12 +88,26 @@ class Population(Swarm):
 
     def add_house(self, pos):
         self.objects.add_object(
-            file='experiments/covid/images/square.png', pos=pos, scale=[90, 90], obj_type="obstacle"
+            file='experiments/covid/images/square.png', pos=pos, scale=[90, 90], obj_type="site"
         )
 
     def remove_house(self, pos):
-        for i, house in enumerate(self.objects.obstacles):
+        for i, house in enumerate(self.objects.sites):
             if house.pos[0] == pos[0] and house.pos[1] == pos[1]:
-                # self.objects.obstacles[i].remove()
-                # print(house.pos, pos)
                 house.kill()
+
+    def add_hospital(self, pos):
+        self.objects.add_object(
+            file='experiments/covid/images/hospital.png', pos=pos, scale=[40, 40], obj_type="obstacle"
+        )
+
+    def remove_hospital(self, pos):
+        for i, hospital in enumerate(self.objects.obstacles):
+            if hospital.pos[0] == pos[0] and hospital.pos[1] == pos[1]:
+                hospital.kill()
+
+    def count_hospitals(self):
+        x = 0
+        for hospital in self.objects.obstacles:
+            x += 1
+        return x

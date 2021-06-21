@@ -71,6 +71,7 @@ class Person(Agent):
     self.preventive_isolation_bol = False
     self.previous_time = pygame.time.get_ticks()
     self.speed_before_curfew = self.v
+    self.checked_into_hos = False
 
   def update_actions(self) -> None:
     """
@@ -90,36 +91,6 @@ class Person(Agent):
         2) ensures the right image/color for each individual in each state
     '''
 
-    # avoid any obstacles in the environment
-
-    # for obstacle in self.population.objects.obstacles:
-    #     collide = pygame.sprite.collide_mask(self, obstacle)
-    #     if bool(collide):
-    #         # If person gets stuck because when avoiding the obstacle ended up inside of the object,
-    #         # resets the position to the previous one and do a 180 degree turn back
-    #         if not self.avoided_obstacles:
-    #             self.prev_pos = self.pos.copy()
-    #             self.prev_v = self.v.copy()
-    #             # print(obstacle.rect, obstacle.pos, self.pos)
-    #             if obstacle.rect[0] < self.pos[0] < obstacle.rect[0]+obstacle.rect[2] and \
-    #                     obstacle.rect[1] < self.pos[1] < obstacle.rect[1]+obstacle.rect[3] and\
-    #                     all(self.v) != 0 and any([n for n in self.population.find_neighbors(self, config["person"]["radius_view"]) \
-    #                                               if all(n.v) == 0 and n.state == 'I']):
-    #                 # print('\n', obstacle.rect, obstacle.pos, self.pos)
-    #                 self.pos = np.array([self.pos[0] - obstacle.rect[2], self.pos[1]])
-    #                 self.v = [-self.v[0], -self.v[1]]
-    #                 return
-    #         else:
-    #             self.pos = self.prev_pos.copy()
-    #             self.v = self.prev_v.copy()
-    #
-    #         self.avoided_obstacles = True
-    #         self.avoid_obstacle()
-    #         return
-    #
-    # self.prev_v = None
-    # self.prev_pos = None
-    # self.avoided_obstacles = False
     if self.wearing_mask:
       green = 'experiments/covid/images/green_mask.png'  # for recovered
       orange = 'experiments/covid/images/orange_mask.png'  # for susceptible
@@ -129,7 +100,7 @@ class Person(Agent):
       orange = 'experiments/covid/images/orange.png'  # for susceptible
       red = 'experiments/covid/images/red.png'  # for infected
 
-    skull = 'experiments/covid/images/skull.png'  # for dead
+    # skull = 'experiments/covid/images/skull.png'  # for dead
     if self.state == 'S':
       self.image, self.rect = image_with_rect(
         orange, [config['agent']['width'], config['agent']['height']]
@@ -138,15 +109,10 @@ class Person(Agent):
       self.image, self.rect = image_with_rect(
         green, [config['agent']['width'], config['agent']['height']]
       )
-    elif self.state == 'I':
+    elif self.state == 'I' or 'H':
       self.image, self.rect = image_with_rect(
         red, [config['agent']['width'], config['agent']['height']]
       )
-    elif self.state == 'D':
-      self.image, self.rect = image_with_rect(
-        skull, [int(config['agent']['width']*1.5), config['agent']['height']]
-      )
-      self.v = [0, 0]
 
   def apply_curfew(self):
     if config['population']['curfew']:
@@ -154,7 +120,7 @@ class Person(Agent):
         pass
       else:
         if (pygame.time.get_ticks() - self.previous_time) < 500: # no curfew
-          if not self.in_house(self.pos):
+          if not self.in_house(self.pos) and not self.in_hospital(self.pos):
             self.v = self.speed_before_curfew
         elif 500 < (pygame.time.get_ticks() - self.previous_time) < 1000: # curfew
           if any(self.v) != 0:
@@ -172,36 +138,32 @@ class Person(Agent):
           self.preventive_isolation()
         neighbors = self.population.find_neighbors(self, config["person"]["radius_view"])
         for n in neighbors:
-          if (n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0):
+          if n.state == 'I' and not all(n.v) == 0 and not all(self.v) == 0:
             if self.preventive_isolation_chance():  # 15% chance to go in self preventive quarantine
               # if you have a chance to get infected & called only once for the agent that caused us to go in preventive quarantine
               if self.infectable() and not self.preventive_isolation_bol: # preventive_isolation_bol becomes true once preventive_isolation is called
-                if self.wearing_mask and not self.mask_prevention(): # if u wear a mask and it prevents you from infection
+                if self.wearing_mask and not self.mask_prevention(n): # if u wear a mask and it prevents you from infection
                   break
                 else:   # else if  no mask or if mask but that doesnt prevent you from infection
                   if n.asymptomatic():
                     if self.asymptomatic_chance():
                       self.start_incubation_timer()
-                      # print(self.v, n.v)
                       break
                   else:
                     self.start_incubation_timer()
-                    # print(self.v, n.v)
                     break
               if not self.denier:
                 self.preventive_isolation()
             if not self.preventive_isolation_chance() and self.infectable():  # if you have a chance to get infected
-              if self.wearing_mask and not self.mask_prevention(): # if u wear a mask and it prevents you from infection
+              if self.wearing_mask and not self.mask_prevention(n): # if u wear a mask and it prevents you from infection
                 break
               else:   # else if  no mask or if mask but that doesnt prevent you from infection
                 if n.asymptomatic():
                   if self.asymptomatic_chance():
                     self.start_incubation_timer()
-                    # print(self.v, n.v)
                     break
                 else:
                   self.start_incubation_timer()
-                  # print(self.v, n.v)
                   break
 
       elif self.started_incubation:
@@ -215,25 +177,75 @@ class Person(Agent):
       elif self.started_recovery:
         seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
         self.recovered_or_not(seconds_r)
-      if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2 \
-          and self.index != config['base']['n_agents'] - 3 and not self.denier and not self.asymptomatic():
-        if not self.started_quarantine:
-          self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
-          self.started_quarantine = True
-        if self.started_quarantine:
-          if not self.rand_noise_bol:
-            self.rand_noise_bol = True
-            # here generate random noise if needed
-          elif self.rand_noise_bol:
-            seconds_q = (
-                            pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
-            if seconds_q > 1:
-              self.add_house()
-              self.started_quarantine = False
+        if not self.asymptomatic() and not self.in_house(self.pos):
+          if self.chance_to_hospitalize():
+            self.state = 'H'
+            self.checked_into_hos = True
+            return
+          self.checked_into_hos = True
+          if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2 \
+              and self.index != config['base']['n_agents'] - 3 and not self.denier:
+            if not self.started_quarantine:
+              self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
+              self.started_quarantine = True
+            if self.started_quarantine:
+              if not self.rand_noise_bol:
+                self.rand_noise_bol = True
+                # here generate random noise if needed
+              elif self.rand_noise_bol:
+                seconds_q = (
+                                pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
+                if seconds_q > 1:
+                  self.add_house()
+                  self.started_quarantine = False
     elif self.state == 'R' and all(self.v) == 0:
       self.recover()
-    # else:
-    #   self.v = [0,0]
+
+    elif self.state == 'H':
+      if not self.in_hospital(self.pos):
+        self.go_to_hospital()
+      if not self.started_recovery:
+        self.start_millis_recovery = pygame.time.get_ticks()  # starter tick
+        self.started_recovery = True
+      elif self.started_recovery:
+        seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
+        self.recovered_or_not(seconds_r)
+
+    elif self.state == 'D':
+      skull = 'experiments/covid/images/skull.png'  # for dead
+      self.image, self.rect = image_with_rect(
+        skull, [int(config['agent']['width'] * 1.5), config['agent']['height']]
+      )
+      self.v = [0,0]
+
+  def go_to_hospital(self):
+    self.state = 'H'
+    self.population.add_hospital(self.pos)
+    self.v = [0, 0]
+
+  def chance_to_hospitalize(self) -> False:
+    # if true, u should be hospitalized
+    if not self.checked_into_hos:
+      number_of_hospitals = self.population.count_hospitals()
+      if 0 <= self.age <= 4:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr']/3))
+      elif 5 <= self.age <= 17:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr']))
+      elif 18 <= self.age <= 49:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 25))
+      elif 50 <= self.age <= 64:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 65))
+      elif 65 <= self.age < 85:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 138))
+      elif self.age >= 85:
+        hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 172))
+      if hos_prob == 1:  # 0.3% chance
+        if number_of_hospitals <= 1:
+          return True
+        else:
+          if np.random.randint(0, 100) < 15:
+            self.state = 'D'
+
   def asymptomatic_chance(self) -> False: # 42% lower chance to get infected if the contageous person is asymptomatic
     if not self.asymp_bol:
       self.random_chance_asymp = np.random.randint(0, 100)
@@ -241,12 +253,20 @@ class Person(Agent):
     elif self.asymp_bol and self.random_chance_asymp < 42:
       return True
 
-  def mask_prevention(self) -> False: # 50% lower chance to get infected with mask
+  def mask_prevention(self, neighbor) -> False: # 50% lower chance to get infected with mask
     if not self.mask_bol:
       self.random_chance_mask = np.random.randint(0, 100)
       self.mask_bol = True
-    elif self.mask_bol and self.random_chance_mask < 38:
-      return True
+    elif self.mask_bol:
+      if self.wearing_mask and neighbor.wearing_mask:
+        if self.random_chance_mask <= 2:
+          return True
+      elif not self.wearing_mask and neighbor.wearing_mask:
+        if self.random_chance_mask < 5:
+          return True
+      elif self.wearing_mask and not neighbor.wearing_mask:
+        if self.random_chance_mask < 70:
+          return True
 
   def infectable(self) -> False: # 10% chance to get infected
     if not self.infect_bol:
@@ -278,7 +298,6 @@ class Person(Agent):
       self.infected()
 
   def preventive_isolation(self):
-
     if not self.preventive_isolation_bol:
       self.add_house()
       self.v = [0, 0]
@@ -367,8 +386,10 @@ class Person(Agent):
     # simple helper method to avoid code repetition
     self.state = 'R'
     self.started_recovery = False
-
-    self.population.remove_house(self.pos)
+    if self.in_house(self.pos):
+      self.population.remove_house(self.pos)
+    elif self.in_hospital(self.pos):
+      self.population.remove_hospital(self.pos)
     self.v = self.set_velocity()
     self.recover_bol = False
 
@@ -381,6 +402,11 @@ class Person(Agent):
     self.started_incubation = True
 
   def in_house(self, pos) -> False:
-    for obstacle in self.population.objects.obstacles:
-      if obstacle.pos[1] == pos[1] and obstacle.pos[0] == pos[0]:
+    for site in self.population.objects.sites:
+      if site.pos[1] == pos[1] and site.pos[0] == pos[0]:
+        return True
+
+  def in_hospital(self, pos) -> False:
+    for obs in self.population.objects.obstacles:
+      if obs.pos[1] == pos[1] and obs.pos[0] == pos[0]:
         return True

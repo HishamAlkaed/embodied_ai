@@ -4,15 +4,15 @@ n_agents = 50
 object_location  = [300, 300]
 
 [screen]
-frames = 666
+frames = inf
 height = 500
 width  = 500
 
 [population]
 obstacles = false
-maze = false
+hospital = false
 mask = true
-deniers_percentage = 0.45
+deniers_percentage = 1
 curfew = true
 
 [person]
@@ -25,6 +25,7 @@ alignment_weight  = 30.0
 cohesion_weight   = 7.0
 separation_weight = 12.0
 reference_group_dr = 500 ### reference group death ratio => 0.02% = 2/1000 = 1/500
+reference_group_hr = 1000
 
 [agent]
 height    = 20
