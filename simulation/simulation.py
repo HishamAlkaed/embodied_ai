@@ -15,9 +15,9 @@ from experiments.flocking.flock import Flock
 counter_inside_right = 0 # counts the number of roaches in the right site
 counter_inside_left = 0 # counts the number of roaches in the left site
 # file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Mo
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Syb
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Denise
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Hisham
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0.15to0.25.csv' # Syb
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0.30to0.40.csv' # Denise
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0.45to0.55.csv' # Hisham
 
 def _plot_covid(data) -> None:
     """
