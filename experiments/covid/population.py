@@ -88,7 +88,7 @@ class Population(Swarm):
 
     def add_house(self, pos):
         self.objects.add_object(
-            file='experiments/covid/images/square.png', pos=pos, scale=[90, 90], obj_type="site"
+            file='experiments/covid/images/square.png', pos=pos, scale=[70, 70], obj_type="site"
         )
 
     def remove_house(self, pos):

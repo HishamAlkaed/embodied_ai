@@ -14,6 +14,10 @@ from experiments.flocking.flock import Flock
 
 counter_inside_right = 0 # counts the number of roaches in the right site
 counter_inside_left = 0 # counts the number of roaches in the left site
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Mo
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Syb
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Denise
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Hisham
 
 def _plot_covid(data) -> None:
     """
@@ -35,7 +39,7 @@ def _plot_covid(data) -> None:
     total_infected = []
 
     save_run(data)
-    with open('experiments/covid/data.csv', 'r', newline='\n') as result_file:
+    with open(file_to_save_to, 'r', newline='\n') as result_file:
         for i, line in enumerate(result_file):
             if i > 0:
                 for index, list in enumerate(line.split(',')):
@@ -56,12 +60,19 @@ def _plot_covid(data) -> None:
                     elif index == 7:
                         total_infected.append(np.array(list[1:].replace("'", '').split(), dtype=int))
 
-    output_name = "experiments/covid/plots/Covid-19-SIR%s.png" % time.strftime(
+    output_name = "experiments/covid/plots/Covid-19-SIRDH%s.png" % time.strftime(
         "-%m.%d.%y_%H.%M", time.localtime()
     )
 
     fig = plt.figure()
-
+    # for x in susceptible:
+    #     plt.plot(x, label="Susceptible", color=(1, 0.5, 0))  # Orange
+    # for x in infected:
+    #     plt.plot(x, label="Infected", color=(1, 0, 0))  # Orange
+    # for x in recovered:
+    #     plt.plot(x, label="Recovered", color=(0, 1, 0))  # Orange
+    # for x in dead:
+    #     plt.plot(x, label="Dead", color=(0, 0, 0))  # Orange
     plt.plot(avgNestedLists(susceptible), label="Susceptible", color=(1, 0.5, 0))  # Orange
     plt.plot(avgNestedLists(infected), label="Infected", color=(1, 0, 0))  # Red
     plt.plot(avgNestedLists(recovered), label="Recovered", color=(0, 1, 0))  # Green
@@ -75,8 +86,11 @@ def _plot_covid(data) -> None:
     fig.savefig(output_name)
     plt.show()
     print(
-        f'average dead over all runs: {avgNestedLists(total_dead)} \n average recovered over all runs: {avgNestedLists(total_recovered)} \n average infected over all runs: {avgNestedLists(total_infected)}')
-
+        f'average dead over all runs: {avgNestedLists(total_dead)} \n average recovered over all runs: {avgNestedLists(total_recovered)} \n average infected over all runs: {avgNestedLists(total_recovered)[0]+avgNestedLists(total_dead)[0]+avgNestedLists(total_infected)[0]}')
+    print('the Variance of the INFECTED PEAK is:', np.var([max(x) for x in infected]))
+    print('the Standard Deviation of the INFECTED PEAK is:', np.std([max(x) for x in infected]))
+    print('the Variance of the TOTAL DEAD is:', np.var(total_dead))
+    print('the Standard Deviation of the TOTAL DEAD is:', np.std(total_dead))
 
 def _plot_flock() -> None:
     """Plot the data related to the flocking experiment. TODO"""
@@ -125,7 +139,7 @@ def save_run(data):
     # df['S'] = data['S']
 
 def start_recording():
-    with open('experiments/covid/data.csv', 'a', newline='\n') as result_file:
+    with open(file_to_save_to, 'a', newline='\n') as result_file:
         wr = csv.writer(result_file, dialect='excel')
         wr.writerow([' '])
 
@@ -134,7 +148,7 @@ def append_to_data(datax): # tuple left than right
                  str(datax["R"]).replace(',', ' ')[1:-1], str(datax["D"]).replace(',', ' ')[1:-1],
                  str(datax["H"]).replace(',', ' ')[1:-1],
                  datax["R"][-1], datax["D"][-1], datax["I"][-1]])[1:-1] # change the copy
-    with open('experiments/covid/data.csv', 'a', newline='') as result_file:
+    with open(file_to_save_to, 'a', newline='') as result_file:
         result_file.writelines(lines) # update last line with the made copy
 
 """

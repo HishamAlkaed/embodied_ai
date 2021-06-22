@@ -87,8 +87,7 @@ class Person(Agent):
 
   def general_behaviour(self) -> None:
     ''' this function:
-        1) checks for collisions with any obstacles
-        2) ensures the right image/color for each individual in each state
+        1) ensures the right image/color for each individual in each state
     '''
 
     if self.wearing_mask:
@@ -178,11 +177,12 @@ class Person(Agent):
         seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
         self.recovered_or_not(seconds_r)
         if not self.asymptomatic() and not self.in_house(self.pos):
-          if self.chance_to_hospitalize():
-            self.state = 'H'
+          if config['population']['hospital']:
+            if self.chance_to_hospitalize():
+              self.state = 'H'
+              self.checked_into_hos = True
+              return
             self.checked_into_hos = True
-            return
-          self.checked_into_hos = True
           if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2 \
               and self.index != config['base']['n_agents'] - 3 and not self.denier:
             if not self.started_quarantine:
