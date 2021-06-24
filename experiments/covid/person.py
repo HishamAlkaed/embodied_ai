@@ -72,6 +72,7 @@ class Person(Agent):
     self.previous_time = pygame.time.get_ticks()
     self.speed_before_curfew = self.v
     self.checked_into_hos = False
+    self.no_place_in_hospital = False
 
   def update_actions(self) -> None:
     """
@@ -94,10 +95,12 @@ class Person(Agent):
       green = 'experiments/covid/images/green_mask.png'  # for recovered
       orange = 'experiments/covid/images/orange_mask.png'  # for susceptible
       red = 'experiments/covid/images/red_mask.png'  # for infected
+      purple = 'experiments/covid/images/purple.png' # TODO
     elif not self.wearing_mask:
       green = 'experiments/covid/images/green_1.png'  # for recovered
       orange = 'experiments/covid/images/orange.png'  # for susceptible
       red = 'experiments/covid/images/red.png'  # for infected
+      purple = 'experiments/covid/images/purple.png'
 
     # skull = 'experiments/covid/images/skull.png'  # for dead
     if self.state == 'S':
@@ -109,10 +112,14 @@ class Person(Agent):
         green, [config['agent']['width'], config['agent']['height']]
       )
     elif self.state == 'I' or 'H':
-      self.image, self.rect = image_with_rect(
-        red, [config['agent']['width'], config['agent']['height']]
-      )
-
+      if self.no_place_in_hospital == True:
+        self.image, self.rect = image_with_rect(
+          purple, [config['agent']['width'], config['agent']['height']]
+        )
+      else:
+        self.image, self.rect = image_with_rect(
+          red, [config['agent']['width'], config['agent']['height']]
+        )
   def apply_curfew(self):
     if config['population']['curfew']:
       if self.denier or self.state == 'D':
@@ -170,34 +177,43 @@ class Person(Agent):
 
     elif self.state == 'I':
       # if infected start timer and check each frame rate whether it has been already enough time to recover or not (given tha age)
-      if not self.started_recovery:
-        self.start_millis_recovery = pygame.time.get_ticks()  # starter tick
-        self.started_recovery = True
-      elif self.started_recovery:
-        seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
-        self.recovered_or_not(seconds_r)
-        if not self.asymptomatic() and not self.in_house(self.pos):
-          if config['population']['hospital']:
-            if self.chance_to_hospitalize():
-              self.state = 'H'
+      if not self.no_place_in_hospital:
+        if not self.started_recovery:
+          self.start_millis_recovery = pygame.time.get_ticks()  # starter tick
+          self.started_recovery = True
+        elif self.started_recovery:
+          seconds_r = (pygame.time.get_ticks() - self.start_millis_recovery) / 1000  # calculate how many seconds
+          self.recovered_or_not(seconds_r)
+          if not self.asymptomatic() and not self.in_house(self.pos):
+            if config['population']['hospital']:
+              if self.chance_to_hospitalize():
+                self.state = 'H'
+                self.checked_into_hos = True
+                return
               self.checked_into_hos = True
-              return
-            self.checked_into_hos = True
-          if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2 \
-              and self.index != config['base']['n_agents'] - 3 and not self.denier:
-            if not self.started_quarantine:
-              self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
-              self.started_quarantine = True
-            if self.started_quarantine:
-              if not self.rand_noise_bol:
-                self.rand_noise_bol = True
-                # here generate random noise if needed
-              elif self.rand_noise_bol:
-                seconds_q = (
-                                pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
-                if seconds_q > 1:
-                  self.add_house()
-                  self.started_quarantine = False
+            if self.index != config['base']['n_agents'] - 1 and self.index != config['base']['n_agents'] - 2 \
+                and self.index != config['base']['n_agents'] - 3 and not self.denier:
+              if not self.started_quarantine:
+                self.start_millis_quarantine = pygame.time.get_ticks()  # starter tick
+                self.started_quarantine = True
+              if self.started_quarantine:
+                if not self.rand_noise_bol:
+                  self.rand_noise_bol = True
+                  # here generate random noise if needed
+                elif self.rand_noise_bol:
+                  seconds_q = (
+                                  pygame.time.get_ticks() - self.start_millis_quarantine) / 1000  # calculate how many seconds
+                  if seconds_q > 1:
+                    self.add_house()
+                    self.started_quarantine = False
+      else:
+        if self.population.count_hospitals() <= 1:
+          self.population.add_hospital(self.pos)
+          self.state = 'H'
+          self.checked_into_hos = True
+          self.no_place_in_hospital = False
+          self.v = [0,0]
+
     elif self.state == 'R' and all(self.v) == 0:
       self.recover()
 
@@ -220,7 +236,8 @@ class Person(Agent):
 
   def go_to_hospital(self):
     self.state = 'H'
-    self.population.add_hospital(self.pos)
+    if not self.in_hospital(self.pos):
+      self.population.add_hospital(self.pos)
     self.v = [0, 0]
 
   def chance_to_hospitalize(self) -> False:
@@ -239,10 +256,11 @@ class Person(Agent):
         hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 138))
       elif self.age >= 85:
         hos_prob = np.random.randint(0, round(config['person']['reference_group_hr'] / 172))
-      if hos_prob == 1:  # 0.3% chance
+      if hos_prob == 0:  # 0.3% chance
         if number_of_hospitals <= 1:
           return True
         else:
+          self.no_place_in_hospital = True
           if np.random.randint(0, 100) < 15:
             self.state = 'D'
 

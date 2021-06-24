@@ -4,7 +4,7 @@ n_agents = 50
 object_location  = [300, 300]
 
 [screen]
-frames = 666
+frames = inf
 height = 500
 width  = 500
 
@@ -12,7 +12,7 @@ width  = 500
 obstacles = false
 hospital = true
 mask = true
-deniers_percentage = 0.05
+deniers_percentage = 0.5
 curfew = true
 
 [person]

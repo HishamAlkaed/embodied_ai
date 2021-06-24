@@ -14,10 +14,9 @@ from experiments.flocking.flock import Flock
 
 counter_inside_right = 0 # counts the number of roaches in the right site
 counter_inside_left = 0 # counts the number of roaches in the left site
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Mo
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0.15to0.25.csv' # Syb
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0.30to0.40.csv' # Denise
-# file_to_save_to = 'experiments/covid/data_files_w4/data_0.45to0.55.csv' # Hisham
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0to0.10.csv' # Mo# file_to_save_to = 'experiments/covid/data_files_w4/data_0.15to0.25.csv' # Syb
+# file_to_save_to = 'experiments/covid/data_files_w4/data_0.30to0.35.csv' # Denise
+file_to_save_to = 'experiments/covid/data_files_w4/data_no_restrictions.csv'
 
 def _plot_covid(data) -> None:
     """
@@ -78,15 +77,15 @@ def _plot_covid(data) -> None:
     plt.plot(avgNestedLists(recovered), label="Recovered", color=(0, 1, 0))  # Green
     plt.plot(avgNestedLists(dead), label="Dead", color=(0, 0, 0))  # Black
     plt.plot(avgNestedLists(hospitalized), label="Hospitalized", color=(0, 0, 1))  # Blue
-    plt.title("Covid-19 Simulation (masks & quarantine & 50% deniers)")
+    plt.title("No restrictions")
     plt.xlabel("60 Seconds (60 Days)")
     plt.ylabel("Population")
     plt.tick_params(labelbottom=False)
     plt.legend()
-    fig.savefig(output_name)
+    # fig.savefig(output_name)
     plt.show()
     print(
-        f'average dead over all runs: {avgNestedLists(total_dead)} \n average recovered over all runs: {avgNestedLists(total_recovered)} \n average infected over all runs: {avgNestedLists(total_recovered)[0]+avgNestedLists(total_dead)[0]+avgNestedLists(total_infected)[0]}')
+        f'average dead over all runs: {avgNestedLists(total_dead)} \n average recovered over all runs: {avgNestedLists(total_recovered)} \n average infected over all runs: {50-avgNestedLists(susceptible)[-1]}')
     print('the Variance of the INFECTED PEAK is:', np.var([max(x) for x in infected]))
     print('the Standard Deviation of the INFECTED PEAK is:', np.std([max(x) for x in infected]))
     print('the Variance of the TOTAL DEAD is:', np.var(total_dead))
