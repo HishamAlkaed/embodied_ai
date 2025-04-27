@@ -1,5 +1,5 @@
 # EmbodiedAI 2021
-This repository contains the practical materials for the Embodied Artificial Intelligence course.
+This repository contains the practical materials for the Embodied Artificial Intelligence course. The end product simulates the behaviour of Covid19 in infecting people.
 
 ## Installation
 To run this software, install the dependencies by running
@@ -14,44 +14,4 @@ If you want to auto generate the documentation, just run in the terminal in the 
     
     pdoc3 --html .
 
-
-## NOTE
-
-There is a known bug that may (rarely) crash the program in random occasions when the number of agents is very high 
-(especially if your computer is not very performant), regarding the memory usage of pygame.
-When this bug appears, just waiting couple of seconds and re-running the program should
-fix it
-
-We are actively working for fixing this. 
-
-
-## Examples Assignment 1: 
-
-About Stage 1:
-
-![Output sample](gifs/Assignment1/demo_pt0.gif)
-
-
-About Experiment 1:
-
-
-![alt text](gifs/Assignment1/demo_pt1.PNG)
-
-
-About Experiment 2:
-
-
-![alt text](gifs/Assignment1/demo_pt2.png)
-
-
-
-## Examples Assignment 2:
-
-SIR model:
-
-![Output sample](gifs/Assignment2/covid.gif)
-
-Simplified lockdown:
-
-![Output sample](gifs/Assignment2/covid1.gif)
 
